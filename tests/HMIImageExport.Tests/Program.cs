@@ -374,7 +374,7 @@ Test("Word: Export mit Deckblatt, Beschriftung, Querformat", () =>
     var res = WordExporter.Export(outPath, imgs, o);
     Check(res.ImagesWritten == 3 && res.MissingFiles.SequenceEqual(new[] { "Fehlt" }), "Ergebnis");
     using var zip = ZipFile.OpenRead(outPath);
-    var media = zip.Entries.Where(e => e.FullName.StartsWith("word/media/")).ToList();
+    var media = zip.Entries.Where(e => e.FullName.Contains("media/") && e.FullName.EndsWith(".png")).ToList();   // Pfad hängt vom SDK ab (media/ oder word/media/)
     Check(media.Count == 3, "eingebettete Bilder: " + media.Count + " von 3; Einträge: " + string.Join(", ", zip.Entries.Select(e => e.FullName)));
     var xml = ReadEntry(zip, "word/document.xml");
     Check(xml.Contains("Titel XYZ") && xml.Contains("Anlage: Anlage1"), "Deckblatt");
