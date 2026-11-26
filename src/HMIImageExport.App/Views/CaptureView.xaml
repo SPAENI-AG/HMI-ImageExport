@@ -1,0 +1,110 @@
+<UserControl x:Class="HMIImageExport.App.Views.CaptureView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:HMIImageExport.App.Infrastructure">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+
+      <GroupBox Grid.Column="0" Header="{l:Tr Conn_Title}" Margin="0,0,5,10">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="70"/>
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <TextBlock Grid.Row="0" Text="{l:Tr Conn_Host}" Style="{StaticResource FormLabel}"/>
+          <TextBox x:Name="tb_Host" Grid.Row="0" Grid.Column="1" Margin="0,0,10,6"/>
+          <TextBlock Grid.Row="0" Grid.Column="2" Text="{l:Tr Conn_Port}" Style="{StaticResource FormLabel}"/>
+          <TextBox x:Name="tb_Port" Grid.Row="0" Grid.Column="3" Text="5900" Margin="0,0,0,6"/>
+          <TextBlock Grid.Row="1" Text="{l:Tr Conn_Password}" Style="{StaticResource FormLabel}"/>
+          <PasswordBox x:Name="pb_Password" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,0,0,8"/>
+          <StackPanel Grid.Row="2" Grid.ColumnSpan="4" Orientation="Horizontal">
+            <Button x:Name="bt_Connect" Content="{l:Tr Conn_Connect}" Style="{StaticResource PrimaryButton}"
+                    Click="bt_Connect_Click" MinWidth="110"/>
+            <Button x:Name="bt_Disconnect" Content="{l:Tr Conn_Disconnect}" Click="bt_Disconnect_Click"
+                    MinWidth="110" Visibility="Collapsed"/>
+            <TextBlock x:Name="tb_Status" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+          </StackPanel>
+        </Grid>
+      </GroupBox>
+
+      <GroupBox Grid.Column="1" Header="{l:Tr Folder_Title}" Margin="5,0,0,10">
+        <StackPanel>
+          <TextBlock x:Name="tb_Folder" TextWrapping="Wrap" Margin="0,0,0,8"/>
+          <Button x:Name="bt_Folder" Content="{l:Tr Folder_Choose}" Click="bt_Folder_Click" HorizontalAlignment="Left"/>
+        </StackPanel>
+      </GroupBox>
+    </Grid>
+
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="360"/>
+      </Grid.ColumnDefinitions>
+
+      <Border Grid.Column="0" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="6" Margin="0,0,10,10">
+        <Grid>
+          <Image x:Name="img_Panel" Stretch="Uniform" MouseLeftButtonDown="img_Panel_MouseLeftButtonDown"
+                 RenderOptions.BitmapScalingMode="HighQuality"/>
+          <TextBlock x:Name="tb_PanelHint" Text="{l:Tr Panel_Hint}" Style="{StaticResource MutedText}"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
+        </Grid>
+      </Border>
+
+      <GroupBox Grid.Column="1" Header="{l:Tr Pages_Title}">
+        <DockPanel>
+          <Button x:Name="bt_Save" DockPanel.Dock="Top" Content="{l:Tr Pages_Save}" Style="{StaticResource PrimaryButton}"
+                  Click="bt_Save_Click" Margin="0,0,0,8"/>
+          <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+            <Button x:Name="bt_Rename" Content="{l:Tr Pages_Rename}" Click="bt_Rename_Click" Margin="0,0,6,6"/>
+            <Button x:Name="bt_Retake" Content="{l:Tr Pages_Retake}" Click="bt_Retake_Click" Margin="0,0,6,6"/>
+            <Button x:Name="bt_Remove" Content="{l:Tr Pages_Remove}" Click="bt_Remove_Click" Margin="0,0,6,6"/>
+            <Button x:Name="bt_Up" Content="{l:Tr Pages_Up}" Click="bt_Up_Click" Margin="0,0,6,6" MinWidth="32"/>
+            <Button x:Name="bt_Down" Content="{l:Tr Pages_Down}" Click="bt_Down_Click" Margin="0,0,0,6" MinWidth="32"/>
+          </WrapPanel>
+          <Grid>
+            <ListBox x:Name="lb_Pages" AllowDrop="True" HorizontalContentAlignment="Stretch"
+                     BorderBrush="{StaticResource LineBrush}" SelectionChanged="lb_Pages_SelectionChanged"
+                     PreviewMouseLeftButtonDown="lb_Pages_PreviewMouseLeftButtonDown"
+                     PreviewMouseMove="lb_Pages_PreviewMouseMove" Drop="lb_Pages_Drop">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid Margin="2">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="100"/>
+                      <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Image Source="{Binding Thumbnail}" Width="96" Height="60" Stretch="Uniform"/>
+                    <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Text="{Binding Info}" Style="{StaticResource MutedText}" FontSize="11"
+                                 TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock x:Name="tb_PagesEmpty" Text="{l:Tr Pages_Empty}" Style="{StaticResource MutedText}"
+                       TextWrapping="Wrap" Margin="12" IsHitTestVisible="False" VerticalAlignment="Top"/>
+          </Grid>
+        </DockPanel>
+      </GroupBox>
+    </Grid>
+  </Grid>
+</UserControl>

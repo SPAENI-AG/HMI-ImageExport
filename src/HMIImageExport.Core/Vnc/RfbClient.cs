@@ -189,7 +189,11 @@ public sealed class RfbClient : IVncSession
                 default: throw new VncException($"Nicht unterstütztes Encoding ({enc}).");
             }
         }
-        lock (_frontLock) { Buffer.BlockCopy(_work, 0, _front, 0, _work.Length); }
+        lock (_frontLock)
+        {
+            Buffer.BlockCopy(_work, 0, _front, 0, _work.Length);
+            for (var i = 3; i < _front.Length; i += 4) _front[i] = 255;   // Füllbyte des Servers → deckend
+        }
         SendUpdateRequest(!resized);
         FrameUpdated?.Invoke(this, EventArgs.Empty);
     }

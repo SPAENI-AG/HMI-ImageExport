@@ -30,6 +30,15 @@ public partial class MainWindow : Window
 
     private void mi_Settings_Click(object sender, RoutedEventArgs e) => tc_Main.SelectedItem = ti_Settings;
 
+    private void mi_Open_Click(object sender, RoutedEventArgs e) => view_Capture.ChooseFolder();
+
+    private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (view_Capture.HandleKey(e)) e.Handled = true;
+    }
+
+    private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e) => view_Capture.Shutdown();
+
     private void mi_Exit_Click(object sender, RoutedEventArgs e) => Close();
 
     private void mi_About_Click(object sender, RoutedEventArgs e) =>
