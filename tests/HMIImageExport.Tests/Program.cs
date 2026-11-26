@@ -324,11 +324,11 @@ Test("RFB: Server spricht kein VNC / Verbindung verweigert", () => Task.Run(asyn
     catch (VncException) { }
 }).GetAwaiter().GetResult());
 
-byte[] FakePng(int w, int h)
+byte[] FakePng(int w, int h, int seed = 0)
 {
     var b = new List<byte> { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, (byte)'I', (byte)'H', (byte)'D', (byte)'R' };
     foreach (var v in new[] { w, h }) b.AddRange(new[] { (byte)(v >> 24), (byte)(v >> 16), (byte)(v >> 8), (byte)v });
-    b.AddRange(new byte[8]);
+    b.AddRange(Enumerable.Repeat((byte)seed, 8));   // verschiedene Bilder, damit nichts zusammengelegt wird
     return b.ToArray();
 }
 string ReadEntry(ZipArchive z, string name)
@@ -364,7 +364,7 @@ Test("Word: Export mit Deckblatt, Beschriftung, Querformat", () =>
     for (var i = 1; i <= 3; i++)
     {
         var path = Path.Combine(d, $"p{i}.png");
-        File.WriteAllBytes(path, FakePng(800, 480));
+        File.WriteAllBytes(path, FakePng(800, 480, i));
         imgs.Add(new WordImage(path, $"Seite {i}", t0));
     }
     imgs.Add(new WordImage(Path.Combine(d, "fehlt.png"), "Fehlt", t0));
@@ -374,7 +374,8 @@ Test("Word: Export mit Deckblatt, Beschriftung, Querformat", () =>
     var res = WordExporter.Export(outPath, imgs, o);
     Check(res.ImagesWritten == 3 && res.MissingFiles.SequenceEqual(new[] { "Fehlt" }), "Ergebnis");
     using var zip = ZipFile.OpenRead(outPath);
-    Check(zip.Entries.Count(e => e.FullName.StartsWith("word/media/")) == 3, "eingebettete Bilder");
+    var media = zip.Entries.Where(e => e.FullName.StartsWith("word/media/")).ToList();
+    Check(media.Count == 3, "eingebettete Bilder: " + media.Count + " von 3; Einträge: " + string.Join(", ", zip.Entries.Select(e => e.FullName)));
     var xml = ReadEntry(zip, "word/document.xml");
     Check(xml.Contains("Titel XYZ") && xml.Contains("Anlage: Anlage1"), "Deckblatt");
     Check(xml.Contains("Seite 2 · Anlage1 · 26.11.2026"), "Beschriftung");
@@ -391,7 +392,7 @@ Test("Word: Hochformat ohne Deckblatt und ohne Beschriftung; leere Liste → Feh
     for (var i = 1; i <= 2; i++)
     {
         var path = Path.Combine(d, $"p{i}.png");
-        File.WriteAllBytes(path, FakePng(800, 480));
+        File.WriteAllBytes(path, FakePng(800, 480, i));
         imgs.Add(new WordImage(path, $"Seite {i}", t0));
     }
     var outPath = Path.Combine(d, "out.docx");
