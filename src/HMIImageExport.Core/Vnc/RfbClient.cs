@@ -186,6 +186,19 @@ public sealed class RfbClient : IVncSession
                 case -223:
                     if (w <= 0 || h <= 0 || w > MaxDimension || h > MaxDimension) throw new VncException("Ungültige Panel-Grösse.");
                     Allocate(w, h); resized = true; break;
+                case -239: // Cursor (RichCursor): Pixel + Bitmaske – wird nicht gezeichnet, nur überlesen
+                    if (w > 0 && h > 0)
+                    {
+                        var n = (long)w * h * 4 + (long)((w + 7) / 8) * h;
+                        if (n > 16_000_000) throw new VncException("Ungültiger Mauszeiger vom Server.");
+                        await ReadAsync((int)n, ct);
+                    }
+                    break;
+                case -240: // XCursor: 6 Byte Farben + zwei Bitmasken
+                    if (w > 0 && h > 0) await ReadAsync(6 + 2 * ((w + 7) / 8) * h, ct);
+                    break;
+                case -232: break;      // PointerPos: keine Nutzdaten
+                case -224: i = rects; break;   // LastRect: Ende der Rechtecke
                 default: throw new VncException($"Nicht unterstütztes Encoding ({enc}).");
             }
         }

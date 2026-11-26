@@ -10,3 +10,4 @@
 - Core: eigener RFB-Client (`RfbClient`, `VncAuth`) für Siemens-Panels (Raw, CopyRect, Hextile, VNC-Passwort) mit Tests gegen simulierten Server.
 - App: Verbinden-Dialog, Panel-Anzeige mit Klick als Tipp, Seite speichern (F9), Seitenliste mit Vorschau, Umbenennen, Neu aufnehmen, Entfernen, Sortierung per Drag & Drop und Alt+↑/↓.
 - Core: RfbClient liefert deckende Pixel (Alpha 255).
+- RfbClient: Pseudo-Encodings Cursor (-239), XCursor (-240), PointerPos, LastRect werden überlesen (Siemens-Panel sendet den Mauszeiger ungefragt).

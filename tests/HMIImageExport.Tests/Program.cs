@@ -250,6 +250,46 @@ Test("RFB: Anmeldung, Raw, Hextile und Tippen gegen simulierten Server", () => T
     listener.Stop();
 }).GetAwaiter().GetResult());
 
+Test("RFB: RFB 3.3 ohne Passwort, Cursor-Pseudo-Encoding wird überlesen", () => Task.Run(async () =>
+{
+    var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
+    var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+    string? serverErr = null;
+    var server = Task.Run(async () =>
+    {
+        try
+        {
+            using var c = await listener.AcceptTcpClientAsync(); var st = c.GetStream();
+            await st.WriteAsync(Encoding.ASCII.GetBytes("RFB 003.003\n"));
+            if (Encoding.ASCII.GetString(await Rd(st, 12)) != "RFB 003.003\n") throw new Exception("Version");
+            await st.WriteAsync(new byte[] { 0, 0, 0, 1 });          // Sicherheitsart None
+            await Rd(st, 1);                                           // ClientInit
+            var init = new List<byte> { 0, 2, 0, 1 }; init.AddRange(new byte[16]); init.AddRange(new byte[] { 0, 0, 0, 1, (byte)'T' });
+            await st.WriteAsync(init.ToArray());
+            await Rd(st, 20);
+            var hdr = await Rd(st, 4); await Rd(st, ((hdr[2] << 8) | hdr[3]) * 4);
+            await Rd(st, 10);
+            var upd = new List<byte> { 0, 0, 0, 2,
+                0, 1, 0, 1, 0, 2, 0, 2, 0xFF, 0xFF, 0xFF, 0x11 };      // Cursor 2x2 an (1,1)
+            upd.AddRange(new byte[2 * 2 * 4 + 1 * 2]);                  // Pixel + Bitmaske
+            upd.AddRange(new byte[] { 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 5, 6, 7, 0, 8, 9, 10, 0 });  // Raw 2x1
+            await st.WriteAsync(upd.ToArray());
+            await Rd(st, 10);
+        }
+        catch (Exception ex) { serverErr = ex.Message; }
+    });
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+    await using var client = new RfbClient();
+    var got = new SemaphoreSlim(0);
+    client.FrameUpdated += (_, _) => got.Release();
+    await client.ConnectAsync("127.0.0.1", port, "", cts.Token);
+    Check(await got.WaitAsync(TimeSpan.FromSeconds(5)), "Update fehlt");
+    var snap = client.GetSnapshot()!;
+    Check(snap.Bgra.Take(4).SequenceEqual(new byte[] { 5, 6, 7, 255 }) && snap.Bgra.Skip(4).Take(4).SequenceEqual(new byte[] { 8, 9, 10, 255 }), "Pixel nach Cursor falsch");
+    Check(await Task.WhenAny(server, Task.Delay(5000)) == server && serverErr == null, "Server: " + serverErr);
+    listener.Stop();
+}).GetAwaiter().GetResult());
+
 Test("RFB: falsches Passwort → VncException", () => Task.Run(async () =>
 {
     var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
