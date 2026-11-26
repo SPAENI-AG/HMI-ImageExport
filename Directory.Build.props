@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <!-- OWNER/... = Update-Prüfung abgeschaltet; nach dem Veröffentlichen ersetzen (z. B. SPAENI-AG/HMI-ImageExport) -->
+    <GitHubRepository>OWNER/HMI-ImageExport</GitHubRepository>
+    <Company>SPÄNI Elektro-Mechanik AG</Company>
+    <Authors>SPÄNI Elektro-Mechanik AG</Authors>
+    <Copyright>© 2026 SPÄNI Elektro-Mechanik AG</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="GitHubRepository" Value="$(GitHubRepository)" />
+  </ItemGroup>
+</Project>

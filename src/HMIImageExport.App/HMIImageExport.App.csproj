@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>HMIImageExport</AssemblyName>
+    <RootNamespace>HMIImageExport.App</RootNamespace>
+    <!-- <ApplicationIcon>Assets\icon.ico</ApplicationIcon> sobald Assets/icon.ico vorhanden ist -->
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HMIImageExport.Core\HMIImageExport.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Help\**\*" CopyToOutputDirectory="PreserveNewest" Condition="Exists('Help')" />
+  </ItemGroup>
+</Project>
