@@ -71,7 +71,7 @@ public static class WordExporter
             body.Append(new Paragraph(ppr, new Run(CreateDrawing(rel, id, img, cx, cy))));
 
             if (o.IncludeCaption)
-                body.Append(TextPara(WordLayout.CaptionText(img.Name, o.Anlage, img.CapturedAt), 20, bold: false,
+                body.Append(TextPara(WordLayout.CaptionText(img.Name, o.Anlage, img.CapturedAt, img.Language), 20, bold: false,
                     color: "6B7280", Before: 0, After: 0, center: true));
 
             needBreak = true;

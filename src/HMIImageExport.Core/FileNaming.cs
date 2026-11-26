@@ -41,8 +41,11 @@ public static class FileNaming
     }
 
     /// <summary>z. B. 01_Start_2026-11-26_1432.png</summary>
-    public static string BuildPageFileName(int number, string pageName, DateTime capturedAt) =>
-        $"{number:00}_{Sanitize(pageName)}_{capturedAt:yyyy-MM-dd_HHmm}.png";
+    public static string BuildPageFileName(int number, string pageName, DateTime capturedAt, string? language = null)
+    {
+        var lang = Sanitize(language, "");
+        return $"{number:00}_{Sanitize(pageName)}{(lang.Length > 0 ? "_" + lang : "")}_{capturedAt:yyyy-MM-dd_HHmm}.png";
+    }
 
     /// <summary>Hängt _2, _3 … an, falls die Datei im Ordner schon existiert.</summary>
     public static string MakeUnique(string folder, string fileName)

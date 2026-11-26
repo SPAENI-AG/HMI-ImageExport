@@ -7,7 +7,7 @@
 <div class="layout">
 <nav>
 <a href="#quickstart">Quick start</a><a href="#connect">Connect to panel</a><a href="#folder">Plant folder</a>
-<a href="#capture">Capture pages</a><a href="#pages">Page list</a><a href="#word">Create Word</a>
+<a href="#capture">Capture pages</a><a href="#pages">Page list</a><a href="#languages">Several languages</a><a href="#word">Create Word</a>
 <a href="#settings">Settings</a><a href="#troubleshooting">Troubleshooting</a><a href="#install">Installation</a>
 <a href="#security">Passwords and security</a><a href="#updates">Updates</a>
 </nav>
@@ -38,6 +38,17 @@
 <li><b>Remove:</b> deletes the page and its image file (with confirmation).</li>
 <li><b>Order:</b> drag &amp; drop, ▲/▼, or <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd>. The list order is used for Word.</li>
 </ul></section>
+
+<section id="languages"><h2>Capture several languages</h2>
+<p>If the panel has several languages that are switched with a language button (e.g. the flag at the top), the tool captures every page in all languages automatically.</p>
+<ol>
+<li>In the <b>Multilingual</b> area, enter the languages as short codes in the order of the language button, e.g. <code>DE, EN, FR</code>. The number follows from the list.</li>
+<li><b>The panel currently shows:</b> select the language that is displayed right now.</li>
+<li>Click <b>Set language button</b> and then click the language button once in the panel image. Use <b>Test switching</b> to check that the panel changes to the next language.</li>
+<li>Enable <b>Capture all languages</b>. Then press <kbd>F9</kbd>: the tool saves the current language, clicks the button, waits until the image is quiet, saves the next language, and so on, and finally switches back to the original language.</li>
+</ol>
+<p>File names contain the code, e.g. <code>02_Seite_2_EN_2026-11-26_1501.png</code>. A page with all its languages shares one number; renaming applies to all languages of the page. In Word, all languages of a page follow each other, and the caption names the language.</p>
+<p>Method (Settings › Multilingual capture): currently <b>each click on the language button switches to the next language</b>. If the image does not change after switching, the tool reports the affected language; then check the language button and the quiet time.</p></section>
 
 <section id="word"><h2>Create Word</h2>
 <p>Inserts all images of the list one after another into a new <code>.docx</code>, one image per page, scaled to page width. Word does not need to be installed.</p>

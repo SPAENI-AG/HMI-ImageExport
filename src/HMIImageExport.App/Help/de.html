@@ -7,7 +7,7 @@
 <div class="layout">
 <nav>
 <a href="#quickstart">Schnellstart</a><a href="#connect">Panel verbinden</a><a href="#folder">Anlagenordner</a>
-<a href="#capture">Seiten aufnehmen</a><a href="#pages">Seitenliste</a><a href="#word">Word erstellen</a>
+<a href="#capture">Seiten aufnehmen</a><a href="#pages">Seitenliste</a><a href="#languages">Mehrere Sprachen</a><a href="#word">Word erstellen</a>
 <a href="#settings">Einstellungen</a><a href="#troubleshooting">Fehlersuche</a><a href="#install">Installation</a>
 <a href="#security">Passwörter und Sicherheit</a><a href="#updates">Updates</a>
 </nav>
@@ -38,6 +38,17 @@
 <li><b>Entfernen:</b> löscht die Seite und die Bilddatei (mit Rückfrage).</li>
 <li><b>Reihenfolge:</b> per Drag &amp; Drop, mit ▲/▼ oder mit <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd>. Die Reihenfolge der Liste gilt für Word.</li>
 </ul></section>
+
+<section id="languages"><h2>Mehrere Sprachen aufnehmen</h2>
+<p>Hat das Panel mehrere Sprachen, die über eine Sprach-Taste (z. B. die Flagge oben) umgeschaltet werden, nimmt das Tool jede Seite automatisch in allen Sprachen auf.</p>
+<ol>
+<li>Im Bereich <b>Mehrsprachig</b> die Sprachen als Kürzel eingeben, in der Reihenfolge der Sprach-Taste, z. B. <code>DE, EN, FR</code>. Die Anzahl ergibt sich daraus.</li>
+<li><b>Das Panel zeigt gerade:</b> die aktuell angezeigte Sprache wählen.</li>
+<li><b>Sprach-Taste festlegen</b> klicken und dann im Panel-Bild einmal auf die Sprach-Taste klicken. Mit <b>Umschalten testen</b> prüfen Sie, ob das Panel zur nächsten Sprache wechselt.</li>
+<li><b>Alle Sprachen aufnehmen</b> aktivieren. Dann <kbd>F9</kbd>: Das Tool speichert die aktuelle Sprache, klickt die Taste, wartet bis das Bild ruhig ist, speichert die nächste Sprache usw. und schaltet am Ende zurück zur Ausgangssprache.</li>
+</ol>
+<p>Die Dateien enthalten das Kürzel, z. B. <code>02_Seite_2_EN_2026-11-26_1501.png</code>. Eine Seite mit allen Sprachen hat eine gemeinsame Nummer; Umbenennen gilt für alle Sprachen der Seite. In Word stehen pro Seite alle Sprachen hintereinander, die Beschriftung nennt die Sprache.</p>
+<p>Das Verfahren (Einstellungen › Mehrsprachige Aufnahme): bisher schaltet <b>jeder Klick auf die Sprach-Taste zur nächsten Sprache</b>. Ändert sich das Bild nach dem Umschalten nicht, meldet das Tool die betroffene Sprache; dann Sprach-Taste und Ruhezeit prüfen.</p></section>
 
 <section id="word"><h2>Word erstellen</h2>
 <p>Fügt alle Bilder der Liste nacheinander in ein neues <code>.docx</code> ein, ein Bild pro Seite, auf Seitenbreite skaliert. Word muss nicht installiert sein.</p>

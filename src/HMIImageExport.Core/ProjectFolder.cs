@@ -36,12 +36,13 @@ public sealed class ProjectFolder
     public string FullPath(PageEntry e) => System.IO.Path.Combine(Path, e.FileName);
     public bool FileExists(PageEntry e) => File.Exists(FullPath(e));
 
-    public PageEntry AddPage(string name, byte[] png, DateTime now)
+    /// <summary>Neue Seite. Bei mehrsprachiger Aufnahme gleiche number/groupId für alle Sprachen der Seite.</summary>
+    public PageEntry AddPage(string name, byte[] png, DateTime now, string language = "", int? number = null, Guid groupId = default)
     {
-        var number = Pages.NextNumber();
-        var fileName = FileNaming.MakeUnique(Path, FileNaming.BuildPageFileName(number, name, now));
+        var nr = number ?? Pages.NextNumber();
+        var fileName = FileNaming.MakeUnique(Path, FileNaming.BuildPageFileName(nr, name, now, language));
         File.WriteAllBytes(System.IO.Path.Combine(Path, fileName), png);
-        var e = Pages.Add(name, fileName, now, number);
+        var e = Pages.Add(name, fileName, now, nr, language, groupId);
         Save();
         return e;
     }
@@ -50,7 +51,7 @@ public sealed class ProjectFolder
     public void ReplacePage(PageEntry e, byte[] png, DateTime now)
     {
         var old = FullPath(e);
-        var fileName = FileNaming.MakeUnique(Path, FileNaming.BuildPageFileName(e.Number, e.Name, now));
+        var fileName = FileNaming.MakeUnique(Path, FileNaming.BuildPageFileName(e.Number, e.Name, now, e.Language));
         File.WriteAllBytes(System.IO.Path.Combine(Path, fileName), png);
         if (File.Exists(old)) File.Delete(old);
         e.FileName = fileName;
@@ -58,18 +59,22 @@ public sealed class ProjectFolder
         Save();
     }
 
-    /// <summary>Benennt Seite und Datei um (Nummer und Zeitstempel bleiben).</summary>
+    /// <summary>Benennt Seite und Datei um (Nummer, Sprache und Zeitstempel bleiben). Gilt für alle Sprachen derselben Seite.</summary>
     public void RenamePage(PageEntry e, string newName)
     {
-        var old = FullPath(e);
-        var wanted = FileNaming.BuildPageFileName(e.Number, newName, e.CapturedAt);
-        if (!string.Equals(wanted, e.FileName, StringComparison.Ordinal))
+        var targets = e.GroupId == Guid.Empty ? new List<PageEntry> { e } : Pages.Items.Where(p => p.GroupId == e.GroupId).ToList();
+        foreach (var t in targets)
         {
-            var fileName = FileNaming.MakeUnique(Path, wanted);
-            if (File.Exists(old)) File.Move(old, System.IO.Path.Combine(Path, fileName));
-            e.FileName = fileName;
+            var old = FullPath(t);
+            var wanted = FileNaming.BuildPageFileName(t.Number, newName, t.CapturedAt, t.Language);
+            if (!string.Equals(wanted, t.FileName, StringComparison.Ordinal))
+            {
+                var fileName = FileNaming.MakeUnique(Path, wanted);
+                if (File.Exists(old)) File.Move(old, System.IO.Path.Combine(Path, fileName));
+                t.FileName = fileName;
+            }
+            t.Name = newName;
         }
-        e.Name = newName;
         Save();
     }
 

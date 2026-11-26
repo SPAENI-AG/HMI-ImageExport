@@ -52,6 +52,16 @@
           </StackPanel>
         </Grid>
       </GroupBox>
+      <GroupBox Header="{l:Tr Set_LangMode_Title}">
+        <StackPanel>
+          <TextBlock Text="{l:Tr Set_LangMode_Label}" Margin="0,0,0,4"/>
+          <ComboBox x:Name="cb_LangMode" SelectionChanged="cb_LangMode_SelectionChanged">
+            <ComboBoxItem Tag="cycle" Content="{l:Tr Set_LangMode_Cycle}" IsSelected="True"/>
+          </ComboBox>
+          <TextBlock Text="{l:Tr Set_LangMode_Note}" Style="{StaticResource MutedText}" FontSize="11"
+                     TextWrapping="Wrap" Margin="0,6,0,0"/>
+        </StackPanel>
+      </GroupBox>
       <Button Content="{l:Tr Set_Folder}" Click="bt_SettingsFolder_Click" HorizontalAlignment="Left"/>
     </StackPanel>
   </Grid>

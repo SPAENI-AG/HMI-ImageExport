@@ -82,6 +82,15 @@ public partial class SettingsView : UserControl
         if (App.Settings.Profiles.Count == 0) lb_Profiles_SelectionChanged(lb_Profiles, null!);
     }
 
+    private void cb_LangMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (cb_LangMode.SelectedItem is ComboBoxItem { Tag: string mode } && App.Settings.LangSwitchMode != mode)
+        {
+            App.Settings.LangSwitchMode = mode;
+            App.SaveSettings();
+        }
+    }
+
     private void bt_SettingsFolder_Click(object sender, RoutedEventArgs e) => OpenSettingsFolder();
 
     public static void OpenSettingsFolder()

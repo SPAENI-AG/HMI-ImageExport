@@ -18,6 +18,7 @@ namespace HMIImageExport.App.Views;
 public sealed class PageItem
 {
     public required PageEntry Entry { get; init; }
+    public string Title { get; init; } = "";
     public string Name => Entry.Name;
     public string Info { get; init; } = "";
     public ImageSource? Thumbnail { get; init; }
@@ -36,6 +37,8 @@ public partial class CaptureView : UserControl
     private Point _dragStart;
     private PageItem? _dragItem;
     private WordExportOptions _word = new();
+    private bool _capturing;
+    private bool _pickingFlag;
 
     public CaptureView()
     {
@@ -47,6 +50,11 @@ public partial class CaptureView : UserControl
             IncludeCoverPage = App.Settings.WordIncludeCoverPage,
             Landscape = App.Settings.WordLandscape,
         };
+        chk_Multi.IsChecked = App.Settings.MultiLanguage;
+        tb_Languages.Text = App.Settings.Languages;
+        tb_LangWait.Text = App.Settings.LangWaitMs.ToString();
+        RefillStartLanguages();
+        UpdateFlagText();
         Loaded += OnLoaded;
         _items.CollectionChanged += (_, _) => tb_PagesEmpty.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         Loc.Instance.LanguageChanged += (_, _) => Dispatcher.BeginInvoke(() => { ApplyStatus(); UpdateFolderText(); Rebuild(SelectedId()); });
@@ -197,11 +205,22 @@ public partial class CaptureView : UserControl
     private void img_Panel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (_session is not { IsConnected: true } || _bmp == null) return;
-        var p = e.GetPosition(img_Panel);
-        if (PanelGeometry.TryMapToPanel(p.X, p.Y, img_Panel.ActualWidth, img_Panel.ActualHeight,
-                _bmp.PixelWidth, _bmp.PixelHeight, out var x, out var y))
-            _session.Tap(x, y);
         e.Handled = true;
+        if (_capturing) return;
+        var p = e.GetPosition(img_Panel);
+        if (!PanelGeometry.TryMapToPanel(p.X, p.Y, img_Panel.ActualWidth, img_Panel.ActualHeight,
+                _bmp.PixelWidth, _bmp.PixelHeight, out var x, out var y)) return;
+        if (_pickingFlag)
+        {
+            _pickingFlag = false;
+            App.Settings.LangButtonX = x;
+            App.Settings.LangButtonY = y;
+            App.SaveSettings();
+            UpdateFlagText();
+            SetStatus("Status_Connected", tb_Host.Text.Trim(), _bmp.PixelWidth, _bmp.PixelHeight);
+            return;
+        }
+        _session.Tap(x, y);
     }
 
     // ---------- Anlagenordner ----------
@@ -234,12 +253,14 @@ public partial class CaptureView : UserControl
 
     // ---------- Seiten ----------
 
-    private void bt_Save_Click(object sender, RoutedEventArgs e) => CaptureCurrentPage();
+    private async void bt_Save_Click(object sender, RoutedEventArgs e) => await CaptureCurrentPageAsync();
 
-    public void CaptureCurrentPage()
+    public async Task CaptureCurrentPageAsync()
     {
+        if (_capturing) return;
         var snap = _session is { IsConnected: true } ? _session.GetSnapshot() : null;
         if (snap == null) { ShowError(Loc.T("Pages_NeedConnection")); return; }   // Bild jetzt sichern, bevor der Dialog öffnet
+        if (App.Settings.MultiLanguage) { await CaptureMultiAsync(snap); return; }
         if (_folder == null && !ChooseFolder()) return;
 
         var name = InputWindow.Ask(Owner, Loc.T("Pages_Save"), Loc.T("Input_PageName"),
@@ -309,6 +330,7 @@ public partial class CaptureView : UserControl
                 {
                     Entry = p,
                     Info = missing ? Loc.T("Pages_FileMissing") : $"{p.CapturedAt:yyyy-MM-dd HH:mm} · {p.FileName}",
+                    Title = string.IsNullOrEmpty(p.Language) ? p.Name : $"{p.Name} ({p.Language})",
                     Thumbnail = missing ? null : Thumb(_folder.FullPath(p)),
                 });
             }
@@ -378,7 +400,7 @@ public partial class CaptureView : UserControl
         if (!string.IsNullOrWhiteSpace(o.ProjectNumber)) o.CoverLines.Add(Loc.T("Cover_Project", o.ProjectNumber));
 
         var folder = _folder;
-        var images = folder.Pages.Items.Select(p => new WordImage(folder.FullPath(p), p.Name, p.CapturedAt)).ToList();
+        var images = folder.Pages.Items.Select(p => new WordImage(folder.FullPath(p), p.Name, p.CapturedAt, p.Language)).ToList();
         bt_Word.IsEnabled = false;
         try
         {
@@ -391,6 +413,116 @@ public partial class CaptureView : UserControl
         }
         catch (Exception ex) { ShowError(ex.Message); }
         finally { UpdateButtons(); }
+    }
+
+    // ---------- Mehrsprachige Aufnahme ----------
+
+    private void Lang_Changed(object sender, RoutedEventArgs e)
+    {
+        App.Settings.MultiLanguage = chk_Multi.IsChecked == true;
+        App.Settings.Languages = tb_Languages.Text.Trim();
+        App.Settings.LangWaitMs = int.TryParse(tb_LangWait.Text.Trim(), out var ms) ? Math.Clamp(ms, 100, 5000) : 600;
+        tb_LangWait.Text = App.Settings.LangWaitMs.ToString();
+        App.SaveSettings();
+        RefillStartLanguages();
+    }
+
+    private void RefillStartLanguages()
+    {
+        var keep = Math.Max(0, cb_StartLang.SelectedIndex);
+        var langs = LanguageList.Parse(tb_Languages.Text);
+        cb_StartLang.ItemsSource = langs;
+        cb_StartLang.SelectedIndex = langs.Count == 0 ? -1 : Math.Min(keep, langs.Count - 1);
+    }
+
+    private void UpdateFlagText() =>
+        tb_FlagPos.Text = App.Settings.LangButtonX < 0
+            ? Loc.T("Lang_ButtonNone")
+            : Loc.T("Lang_ButtonPos", App.Settings.LangButtonX, App.Settings.LangButtonY);
+
+    private void bt_LangPick_Click(object sender, RoutedEventArgs e)
+    {
+        _pickingFlag = true;
+        SetStatus("Lang_PickHint");
+    }
+
+    private async void bt_LangTest_Click(object sender, RoutedEventArgs e)
+    {
+        if (_session is not { IsConnected: true } || App.Settings.LangButtonX < 0) { ShowError(Loc.T("Lang_NeedButton")); return; }
+        try { await _session.TapAsync(App.Settings.LangButtonX, App.Settings.LangButtonY); }
+        catch (Exception ex) { ShowError(ex.Message); }
+    }
+
+    private static bool SameImage(FrameSnapshot a, FrameSnapshot b) =>
+        a.Width == b.Width && a.Height == b.Height && a.Bgra.AsSpan().SequenceEqual(b.Bgra);
+
+    /// <summary>
+    /// Pro Seite alle Sprachen: die Sprach-Taste n-mal klicken (die n-te Umschaltung bringt das Panel zurück zur
+    /// Ausgangssprache), nach jedem Klick warten, bis das Bild ruhig ist, dann speichern.
+    /// </summary>
+    private async Task CaptureMultiAsync(FrameSnapshot first)
+    {
+        var s = App.Settings;
+        var langs = LanguageList.Parse(tb_Languages.Text);
+        if (langs.Count < 2) { ShowError(Loc.T("Lang_NeedTwo")); return; }
+        if (s.LangButtonX < 0 || s.LangButtonY < 0 || s.LangSwitchMode != LangSwitchModes.Cycle) { ShowError(Loc.T("Lang_NeedButton")); return; }
+        if (_folder == null && !ChooseFolder()) return;
+
+        var name = InputWindow.Ask(Owner, Loc.T("Pages_Save"), Loc.T("Input_PageName"),
+            Loc.T("Pages_Default", _folder!.Pages.NextNumber()));
+        if (name == null) return;
+        var session = _session;
+        if (session is not { IsConnected: true }) { ShowError(Loc.T("Pages_NeedConnection")); return; }
+
+        var n = langs.Count;
+        var start = Math.Clamp(cb_StartLang.SelectedIndex, 0, n - 1);
+        var shots = new FrameSnapshot?[n];
+        shots[start] = first;
+        var quiet = TimeSpan.FromMilliseconds(s.LangWaitMs);
+        var timeout = TimeSpan.FromMilliseconds(Math.Max(3000, s.LangWaitMs * 5));
+        var unchanged = new List<string>();
+
+        _capturing = true;
+        UpdateButtons();
+        try
+        {
+            for (var k = 1; k <= n; k++)
+            {
+                var before = session.UpdateCount;
+                await session.TapAsync(s.LangButtonX, s.LangButtonY);
+                await session.WaitForQuietAsync(before, quiet, timeout, CancellationToken.None);
+                if (k == n) break;   // letzte Umschaltung: zurück zur Ausgangssprache
+                SetStatus("Lang_Progress", k + 1, n);
+                var idx = (start + k) % n;
+                var prev = (start + k - 1) % n;
+                shots[idx] = session.GetSnapshot();
+                if (shots[idx] != null && shots[prev] != null && SameImage(shots[idx]!, shots[prev]!)) unchanged.Add(langs[idx]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+            return;
+        }
+        finally
+        {
+            _capturing = false;
+            UpdateButtons();
+        }
+
+        try
+        {
+            var now = DateTime.Now;
+            var number = _folder.Pages.NextNumber();
+            var group = Guid.NewGuid();
+            PageEntry? last = null;
+            for (var i = 0; i < n; i++)
+                if (shots[i] != null) last = _folder.AddPage(name, EncodePng(shots[i]!), now, langs[i], number, group);
+            Rebuild(last?.Id);
+            SetStatus("Status_Saved", $"{name} ({string.Join(", ", langs)})");
+        }
+        catch (Exception ex) { ShowError(ex.Message); return; }
+        if (unchanged.Count > 0) ShowError(Loc.T("Lang_NoChange", string.Join(", ", unchanged)));
     }
 
     private void lb_Pages_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateButtons();
@@ -443,7 +575,7 @@ public partial class CaptureView : UserControl
     public bool HandleKey(KeyEventArgs e)
     {
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
-        if (key == Key.F9) { CaptureCurrentPage(); return true; }
+        if (key == Key.F9) { _ = CaptureCurrentPageAsync(); return true; }
         if (key == Key.O && Keyboard.Modifiers == ModifierKeys.Control) { ChooseFolder(); return true; }
         if (Keyboard.Modifiers == ModifierKeys.Alt && key is Key.Up or Key.Down && lb_Pages.IsKeyboardFocusWithin)
         {
@@ -474,7 +606,9 @@ public partial class CaptureView : UserControl
 
         var sel = lb_Pages.SelectedItem as PageItem;
         var idx = lb_Pages.SelectedIndex;
-        bt_Save.IsEnabled = connected;
+        bt_Save.IsEnabled = connected && !_capturing;
+        bt_LangTest.IsEnabled = connected && !_capturing;
+        bt_LangPick.IsEnabled = connected && !_capturing;
         bt_Word.IsEnabled = _items.Count > 0;
         bt_Rename.IsEnabled = sel != null;
         bt_Remove.IsEnabled = sel != null;

@@ -17,9 +17,10 @@ public static class HelpAnchors
     public const string Install = "install";
     public const string Security = "security";
     public const string Updates = "updates";
+    public const string Languages = "languages";
 
     public static readonly string[] All =
-        { Quickstart, Connect, Folder, Capture, Pages, Word, Settings, Troubleshooting, Install, Security, Updates };
+        { Quickstart, Connect, Folder, Capture, Pages, Word, Settings, Troubleshooting, Install, Security, Updates, Languages };
 }
 
 /// <summary>Lokaler Webserver für die Hilfe: nur 127.0.0.1, nur Dateien unterhalb des Hilfe-Ordners.</summary>

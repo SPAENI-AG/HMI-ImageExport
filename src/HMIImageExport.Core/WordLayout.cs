@@ -1,7 +1,7 @@
 namespace HMIImageExport.Core;
 
 /// <summary>Ein Bild für das Word-Dokument.</summary>
-public sealed record WordImage(string FilePath, string Name, DateTime CapturedAt);
+public sealed record WordImage(string FilePath, string Name, DateTime CapturedAt, string Language = "");
 
 public sealed class WordExportOptions
 {
@@ -45,10 +45,11 @@ public static class WordLayout
     }
 
     /// <summary>z. B. «Start · Anlage1 · 26.11.2026»</summary>
-    public static string CaptionText(string name, string anlage, DateTime date) =>
-        string.IsNullOrWhiteSpace(anlage)
-            ? $"{name} · {date:dd.MM.yyyy}"
-            : $"{name} · {anlage} · {date:dd.MM.yyyy}";
+    public static string CaptionText(string name, string anlage, DateTime date, string? language = null)
+    {
+        var title = string.IsNullOrWhiteSpace(language) ? name : $"{name} ({language})";
+        return string.IsNullOrWhiteSpace(anlage) ? $"{title} · {date:dd.MM.yyyy}" : $"{title} · {anlage} · {date:dd.MM.yyyy}";
+    }
 }
 
 /// <summary>Liest die Bildgrösse aus dem PNG-Kopf (ohne Bibliothek).</summary>

@@ -9,6 +9,10 @@ public sealed class PageEntry
     public string Name { get; set; } = "";
     public string FileName { get; set; } = "";
     public DateTime CapturedAt { get; set; }
+    /// <summary>Sprachkürzel bei mehrsprachiger Aufnahme (sonst leer).</summary>
+    public string Language { get; set; } = "";
+    /// <summary>Gleiche Seite in mehreren Sprachen = gleiche Gruppe (Guid.Empty = Einzelseite).</summary>
+    public Guid GroupId { get; set; }
 }
 
 /// <summary>Seitenliste einer Anlage inkl. Reihenfolge.</summary>
@@ -20,9 +24,9 @@ public sealed class PageList
 
     public int NextNumber() => Items.Count == 0 ? 1 : Items.Max(p => p.Number) + 1;
 
-    public PageEntry Add(string name, string fileName, DateTime capturedAt, int number)
+    public PageEntry Add(string name, string fileName, DateTime capturedAt, int number, string language = "", Guid groupId = default)
     {
-        var e = new PageEntry { Number = number, Name = name, FileName = fileName, CapturedAt = capturedAt };
+        var e = new PageEntry { Number = number, Name = name, FileName = fileName, CapturedAt = capturedAt, Language = language, GroupId = groupId };
         Items.Add(e);
         return e;
     }

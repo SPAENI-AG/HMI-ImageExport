@@ -38,6 +38,16 @@ public sealed class AppSettings
     public bool WordIncludeCoverPage { get; set; } = false;
     public bool WordLandscape { get; set; } = true;
     public string LastProfile { get; set; } = "";
+    /// <summary>Mehrsprachige Aufnahme: pro Seite alle Sprachen durchschalten.</summary>
+    public bool MultiLanguage { get; set; }
+    public string Languages { get; set; } = "DE, EN";
+    /// <summary>Panel-Pixel der Sprach-Taste (-1 = nicht festgelegt). Ein Klick schaltet zur nächsten Sprache.</summary>
+    /// <summary>Verfahren für den Sprachwechsel am Panel; bisher nur "cycle" (Klick = nächste Sprache).</summary>
+    public string LangSwitchMode { get; set; } = LangSwitchModes.Cycle;
+    public int LangButtonX { get; set; } = -1;
+    public int LangButtonY { get; set; } = -1;
+    /// <summary>Ruhezeit (ms) ohne Bildänderung nach dem Umschalten.</summary>
+    public int LangWaitMs { get; set; } = 600;
     /// <summary>Zeitpunkt (UTC) der letzten Update-Prüfung.</summary>
     public DateTime? LastUpdateCheck { get; set; }
     public string SkippedVersion { get; set; } = "";

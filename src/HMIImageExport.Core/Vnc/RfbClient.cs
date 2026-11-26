@@ -21,6 +21,8 @@ public sealed class RfbClient : IVncSession
     private byte[] _front = Array.Empty<byte>();
     private int _w, _h;
     private volatile bool _connected;
+    private long _updateCount;
+    private long _lastUpdateTick;
 
     /// <summary>Zeit zwischen Maustaste drücken und loslassen beim Tippen.</summary>
     public int PressDelayMs { get; set; } = 80;
@@ -208,6 +210,8 @@ public sealed class RfbClient : IVncSession
             for (var i = 3; i < _front.Length; i += 4) _front[i] = 255;   // Füllbyte des Servers → deckend
         }
         SendUpdateRequest(!resized);
+        Interlocked.Exchange(ref _lastUpdateTick, Environment.TickCount64);
+        Interlocked.Increment(ref _updateCount);
         FrameUpdated?.Invoke(this, EventArgs.Empty);
     }
 
@@ -312,21 +316,45 @@ public sealed class RfbClient : IVncSession
         });
     }
 
+    /// <summary>Anzahl der bisher empfangenen Bildaktualisierungen.</summary>
+    public long UpdateCount => Interlocked.Read(ref _updateCount);
+
+    /// <summary>Tippen und warten, bis die Maustaste wieder losgelassen ist. Wirft bei getrennter Verbindung.</summary>
+    public async Task TapAsync(int x, int y)
+    {
+        if (!_connected) throw new VncException("Nicht mit dem Panel verbunden.");
+        x = Math.Clamp(x, 0, Math.Max(0, _w - 1));
+        y = Math.Clamp(y, 0, Math.Max(0, _h - 1));
+        SendPointer(1, x, y);
+        await Task.Delay(PressDelayMs);
+        SendPointer(0, x, y);
+    }
+
     public void Tap(int x, int y)
     {
         if (!_connected) return;
-        x = Math.Clamp(x, 0, Math.Max(0, _w - 1));
-        y = Math.Clamp(y, 0, Math.Max(0, _h - 1));
         _ = Task.Run(async () =>
         {
-            try
-            {
-                SendPointer(1, x, y);
-                await Task.Delay(PressDelayMs);
-                SendPointer(0, x, y);
-            }
+            try { await TapAsync(x, y); }
             catch (Exception) { /* Verbindung weg: Disconnected meldet es */ }
         });
+    }
+
+    /// <summary>
+    /// Wartet, bis nach <paramref name="afterCount"/> mindestens ein Update kam und danach <paramref name="quiet"/> lang
+    /// kein weiteres. false bei Zeitüberschreitung (das aktuelle Bild kann trotzdem verwendet werden).
+    /// </summary>
+    public async Task<bool> WaitForQuietAsync(long afterCount, TimeSpan quiet, TimeSpan timeout, CancellationToken ct)
+    {
+        var deadline = Environment.TickCount64 + (long)timeout.TotalMilliseconds;
+        while (Environment.TickCount64 < deadline)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (UpdateCount > afterCount &&
+                Environment.TickCount64 - Interlocked.Read(ref _lastUpdateTick) >= quiet.TotalMilliseconds) return true;
+            await Task.Delay(30, ct);
+        }
+        return false;
     }
 
     private void SendPointer(byte mask, int x, int y) =>

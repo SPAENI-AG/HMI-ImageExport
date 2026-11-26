@@ -96,6 +96,31 @@
         <DockPanel>
           <Button x:Name="bt_Save" DockPanel.Dock="Top" Content="{l:Tr Pages_Save}" Style="{StaticResource PrimaryButton}"
                   Click="bt_Save_Click" Margin="0,0,0,8"/>
+          <Expander DockPanel.Dock="Top" Margin="0,0,0,8" IsExpanded="False">
+            <Expander.Header>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{l:Tr Lang_Section}" VerticalAlignment="Center"/>
+                <Button Style="{StaticResource HelpButton}" Tag="languages" Margin="8,0,0,0"/>
+              </StackPanel>
+            </Expander.Header>
+            <StackPanel Margin="0,8,0,0">
+              <CheckBox x:Name="chk_Multi" Content="{l:Tr Lang_Enable}" Click="Lang_Changed"/>
+              <TextBlock Text="{l:Tr Lang_List}" Style="{StaticResource MutedText}" FontSize="11"
+                         TextWrapping="Wrap" Margin="0,6,0,2"/>
+              <TextBox x:Name="tb_Languages" LostFocus="Lang_Changed"/>
+              <TextBlock Text="{l:Tr Lang_Current}" Margin="0,8,0,2"/>
+              <ComboBox x:Name="cb_StartLang"/>
+              <WrapPanel Margin="0,8,0,0">
+                <Button x:Name="bt_LangPick" Content="{l:Tr Lang_SetButton}" Click="bt_LangPick_Click" Margin="0,0,6,6"/>
+                <Button x:Name="bt_LangTest" Content="{l:Tr Lang_Test}" Click="bt_LangTest_Click" Margin="0,0,0,6"/>
+              </WrapPanel>
+              <TextBlock x:Name="tb_FlagPos" Style="{StaticResource MutedText}" FontSize="11"/>
+              <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <TextBlock Text="{l:Tr Lang_Wait}" Style="{StaticResource FormLabel}"/>
+                <TextBox x:Name="tb_LangWait" Width="60" LostFocus="Lang_Changed"/>
+              </StackPanel>
+            </StackPanel>
+          </Expander>
           <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
             <Button x:Name="bt_Rename" Content="{l:Tr Pages_Rename}" Click="bt_Rename_Click" Margin="0,0,6,6"/>
             <Button x:Name="bt_Retake" Content="{l:Tr Pages_Retake}" Click="bt_Retake_Click" Margin="0,0,6,6"/>
@@ -117,7 +142,7 @@
                     </Grid.ColumnDefinitions>
                     <Image Source="{Binding Thumbnail}" Width="96" Height="60" Stretch="Uniform"/>
                     <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
-                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                       <TextBlock Text="{Binding Info}" Style="{StaticResource MutedText}" FontSize="11"
                                  TextTrimming="CharacterEllipsis"/>
                     </StackPanel>

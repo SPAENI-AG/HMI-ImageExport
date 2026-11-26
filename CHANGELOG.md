@@ -15,3 +15,5 @@
 - Einstellungen: Verbindungsprofile mit Passwort per DPAPI (%APPDATA%\HMIImageExport), Profilauswahl, letzter Anlagenordner und Word-Optionen werden gemerkt.
 - Hilfe (DE/EN) über lokalen Webserver, ?-Knöpfe, F1, Menü Hilfe (Schnellstart, Fehlersuche, Installation, Einstellungsordner).
 - Update-Hinweis über GitHub Releases mit Banner (Herunterladen, Versionshinweise, Überspringen), Menü «Nach Updates suchen».
+- Mehrsprachige Aufnahme: Sprachen als Kürzel eingeben, Sprach-Taste im Panel-Bild festlegen, pro Seite werden alle Sprachen automatisch durchgeschaltet und gespeichert (Dateiname mit Kürzel, Gruppe, Word mit Sprache in der Beschriftung). Einstellung «Sprachwechsel am Panel» (bisher: Klick = nächste Sprache).
+- RfbClient: TapAsync, UpdateCount, WaitForQuietAsync.

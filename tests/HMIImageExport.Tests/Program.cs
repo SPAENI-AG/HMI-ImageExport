@@ -511,6 +511,71 @@ Test("Hilfe: jeder ?-Knopf und jedes Menü-Tag zeigt auf einen vorhandenen Anker
     foreach (var t in tags) Check(de.Contains(t) && en.Contains(t), "Anker fehlt für Tag: " + t);
 });
 
+Test("LanguageList: Kürzel parsen", () =>
+{
+    Check(LanguageList.Parse("DE, EN ;fr,, de , ").SequenceEqual(new[] { "DE", "EN", "fr" }), "Parse");
+    Check(LanguageList.Parse(null).Count == 0 && LanguageList.Parse(" , ").Count == 0, "leer");
+    Check(LanguageList.Parse("a/b, EN")[0] == "ab", "Bereinigung");
+    Check(new AppSettings().LangSwitchMode == LangSwitchModes.Cycle && new AppSettings().LangButtonX == -1, "Standard");
+});
+
+Test("Mehrsprachig: Dateiname mit Sprache, Gruppe, Umbenennen für alle Sprachen", () =>
+{
+    Check(FileNaming.BuildPageFileName(2, "Seite 2", t0, "EN") == "02_Seite_2_EN_2026-11-26_1432.png", "Dateiname");
+    Check(FileNaming.BuildPageFileName(2, "Seite 2", t0) == "02_Seite_2_2026-11-26_1432.png", "ohne Sprache");
+    var d = TempDir();
+    var pf = ProjectFolder.Open(d);
+    var group = Guid.NewGuid();
+    var nr = pf.Pages.NextNumber();
+    var de = pf.AddPage("Start", png, t0, "DE", nr, group);
+    var en = pf.AddPage("Start", png, t0, "EN", nr, group);
+    var other = pf.AddPage("Einzel", png, t0);
+    Check(de.Number == en.Number && de.FileName != en.FileName && other.Number == nr + 1, "Nummern");
+    pf.RenamePage(de, "Hauptseite");
+    Check(en.Name == "Hauptseite" && en.FileName == "01_Hauptseite_EN_2026-11-26_1432.png" && pf.FileExists(en) && pf.FileExists(de), "Umbenennen Gruppe");
+    Check(other.Name == "Einzel", "Einzelseite unberührt");
+    var back = ProjectFolder.Open(d).Pages.Items;
+    Check(back[1].Language == "EN" && back[1].GroupId == group, "gespeichert");
+    Check(WordLayout.CaptionText("Start", "Anlage1", t0, "EN") == "Start (EN) · Anlage1 · 26.11.2026", "Beschriftung mit Sprache");
+});
+
+Test("RFB: TapAsync und WaitForQuietAsync", () => Task.Run(async () =>
+{
+    var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
+    var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+    byte[]? down = null, up = null; string? serverErr = null;
+    var server = Task.Run(async () =>
+    {
+        try
+        {
+            using var c = await listener.AcceptTcpClientAsync(); var st = c.GetStream();
+            await st.WriteAsync(Encoding.ASCII.GetBytes("RFB 003.003\n"));
+            await Rd(st, 12);
+            await st.WriteAsync(new byte[] { 0, 0, 0, 1 });
+            await Rd(st, 1);
+            var init = new List<byte> { 0, 2, 0, 1 }; init.AddRange(new byte[16]); init.AddRange(new byte[] { 0, 0, 0, 1, (byte)'T' });
+            await st.WriteAsync(init.ToArray());
+            await Rd(st, 20);
+            var hdr = await Rd(st, 4); await Rd(st, ((hdr[2] << 8) | hdr[3]) * 4);
+            await Rd(st, 10);
+            await st.WriteAsync(new byte[] { 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 1, 2, 3, 0, 4, 5, 6, 0 });
+            await Rd(st, 10);
+            down = await Rd(st, 6); up = await Rd(st, 6);
+        }
+        catch (Exception ex) { serverErr = ex.Message; }
+    });
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+    await using var client = new RfbClient { PressDelayMs = 10 };
+    await client.ConnectAsync("127.0.0.1", port, "", cts.Token);
+    Check(await client.WaitForQuietAsync(0, TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(3), cts.Token), "Ruhe nach Update");
+    Check(client.UpdateCount == 1, "UpdateCount");
+    Check(!await client.WaitForQuietAsync(client.UpdateCount, TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(400), cts.Token), "ohne Update → false");
+    await client.TapAsync(1, 0);
+    Check(await Task.WhenAny(server, Task.Delay(5000)) == server && serverErr == null, "Server: " + serverErr);
+    Check(down!.SequenceEqual(new byte[] { 5, 1, 0, 1, 0, 0 }) && up!.SequenceEqual(new byte[] { 5, 0, 0, 1, 0, 0 }), "Tippen");
+    listener.Stop();
+}).GetAwaiter().GetResult());
+
 // Test-Schutz: reversibel, Format wie DPAPI-Ausgabe ("dpapi:…")
 var prot = new FakeProtector();
 
