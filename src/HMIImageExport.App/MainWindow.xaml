@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:l="clr-namespace:HMIImageExport.App.Infrastructure"
         xmlns:views="clr-namespace:HMIImageExport.App.Views"
-        Title="HMI-ImageExport" Width="1080" Height="900" MinWidth="820" MinHeight="600"
+        Title="HMI-ImageExport" Icon="Assets/icon.ico" Width="1080" Height="900" MinWidth="820" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         PreviewKeyDown="Window_PreviewKeyDown" Closing="Window_Closing">
   <Grid>

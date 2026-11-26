@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Tests (Core, Export, Hilfe)
+        run: dotnet run --project tests/HMIImageExport.Tests -c Release
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Build (WPF)
+        run: dotnet build HMI-ImageExport.slnx -c Release
+      - name: Tests
+        run: dotnet run --project tests/HMIImageExport.Tests -c Release --no-build

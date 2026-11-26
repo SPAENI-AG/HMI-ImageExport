@@ -1,0 +1,18 @@
+{
+  "Language": "de",
+  "LastProjectFolder": "C:\\Anlagen\\Beispielanlage",
+  "Profiles": [
+    {
+      "Name": "Beispielpanel",
+      "Host": "192.0.2.10",
+      "Port": 5900,
+      "PasswordProtected": ""
+    }
+  ],
+  "WordIncludeCaption": true,
+  "WordIncludeCoverPage": false,
+  "WordLandscape": true,
+  "MultiLanguage": false,
+  "Languages": "DE, EN",
+  "LangSwitchMode": "cycle"
+}

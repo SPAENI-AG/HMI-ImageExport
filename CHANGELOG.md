@@ -20,3 +20,5 @@
 - Mauszeiger wird nicht mehr ins Bild gezeichnet (Cursor-Encodings angefordert); Option «Mauszeiger vor der Aufnahme an den Bildrand schieben».
 - Mehrsprachig: beliebige Auswahl der aufzunehmenden Sprachen.
 - Seitenliste: Breite per Griff verschiebbar (wird gemerkt); Doppelklick zeigt das Bild gross (◄ ► blättern, Esc).
+- Icon, README mit Screenshot (schematisch, Beispieldaten), SECURITY.md, CONTRIBUTING.md, CLAUDE.md, Beispiel-Einstellungen (`docs/settings.example.json`).
+- CI (Linux: Tests; Windows: Build + Tests) und Release-Workflow (portable ZIP win-x64 mit SHA256, optional Code-Signing, Release-Notiz aus dem CHANGELOG).

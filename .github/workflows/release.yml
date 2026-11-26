@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      SIGN_PFX_BASE64: ${{ secrets.SIGN_PFX_BASE64 }}
+      SIGN_PFX_PASSWORD: ${{ secrets.SIGN_PFX_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Tag muss der Version in Directory.Build.props entsprechen
+        shell: pwsh
+        run: |
+          $xml = [xml](Get-Content Directory.Build.props)
+          $version = $xml.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          $tag = "${{ github.ref_name }}".TrimStart('v')
+          if ($tag -ne $version) { throw "Tag v$tag passt nicht zur Version $version in Directory.Build.props" }
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Tests
+        run: dotnet run --project tests/HMIImageExport.Tests -c Release
+
+      - name: Publish (win-x64, self-contained, Einzeldatei)
+        run: >
+          dotnet publish src/HMIImageExport.App -c Release -r win-x64 --self-contained
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -o publish
+
+      - name: Signieren (optional)
+        if: ${{ env.SIGN_PFX_BASE64 != '' }}
+        shell: pwsh
+        run: |
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\sign.pfx", [Convert]::FromBase64String($env:SIGN_PFX_BASE64))
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1
+          & $signtool.FullName sign /f "$env:RUNNER_TEMP\sign.pfx" /p $env:SIGN_PFX_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 publish\HMIImageExport.exe
+          if ($LASTEXITCODE -ne 0) { throw "Signieren fehlgeschlagen" }
+          Remove-Item "$env:RUNNER_TEMP\sign.pfx"
+
+      - name: ZIP und Prüfsumme
+        shell: pwsh
+        run: |
+          $name = "HMIImageExport_${env:VERSION}_win-x64"
+          New-Item -ItemType Directory -Path "dist\$name" | Out-Null
+          Copy-Item -Path "publish\*" -Destination "dist\$name" -Recurse -Exclude "*.pdb"
+          Copy-Item LICENSE, CHANGELOG.md -Destination "dist\$name"
+          Compress-Archive -Path "dist\$name\*" -DestinationPath "dist\$name.zip"
+          $hash = (Get-FileHash "dist\$name.zip" -Algorithm SHA256).Hash.ToLower()
+          "$hash  $name.zip" | Out-File -FilePath "dist\$name.zip.sha256" -Encoding ascii
+          "ZIP_NAME=$name.zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Release-Notiz aus CHANGELOG
+        shell: pwsh
+        run: |
+          $text = Get-Content CHANGELOG.md -Raw
+          $pattern = "(?ms)^## \[" + [regex]::Escape($env:VERSION) + "\][^\r\n]*\r?\n(.*?)(?=^## \[|\z)"
+          $m = [regex]::Match($text, $pattern)
+          if (-not $m.Success) { throw "Kein CHANGELOG-Abschnitt für Version $env:VERSION" }
+          $m.Groups[1].Value.Trim() | Out-File -FilePath release-notes.md -Encoding utf8
+
+      - name: GitHub-Release erstellen
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" "dist\$env:ZIP_NAME" "dist\$env:ZIP_NAME.sha256" `
+            --title "HMI-ImageExport $env:VERSION" --notes-file release-notes.md
