@@ -2,7 +2,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.IO.Compression;
 using HMIImageExport.Core.Vnc;
+using HMIImageExport.Export;
 using HMIImageExport.Core;
 
 var failed = 0;
@@ -320,6 +322,91 @@ Test("RFB: Server spricht kein VNC / Verbindung verweigert", () => Task.Run(asyn
     try { await client.ConnectAsync("127.0.0.1", 1, "x", CancellationToken.None); Check(false, "keine Ausnahme"); }
     catch (VncException) { }
 }).GetAwaiter().GetResult());
+
+byte[] FakePng(int w, int h)
+{
+    var b = new List<byte> { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, (byte)'I', (byte)'H', (byte)'D', (byte)'R' };
+    foreach (var v in new[] { w, h }) b.AddRange(new[] { (byte)(v >> 24), (byte)(v >> 16), (byte)(v >> 8), (byte)v });
+    b.AddRange(new byte[8]);
+    return b.ToArray();
+}
+string ReadEntry(ZipArchive z, string name)
+{
+    using var r = new StreamReader(z.GetEntry(name)!.Open(), Encoding.UTF8);
+    return r.ReadToEnd();
+}
+
+Test("PngInfo: Grösse lesen, Nicht-PNG abweisen", () =>
+{
+    var d = TempDir();
+    File.WriteAllBytes(Path.Combine(d, "a.png"), FakePng(800, 480));
+    File.WriteAllText(Path.Combine(d, "b.png"), "kein png, aber lang genug fuer den Kopf");
+    Check(PngInfo.TryReadSize(Path.Combine(d, "a.png"), out var w, out var h) && w == 800 && h == 480, "Grösse");
+    Check(!PngInfo.TryReadSize(Path.Combine(d, "b.png"), out _, out _), "kein PNG");
+    Check(!PngInfo.TryReadSize(Path.Combine(d, "fehlt.png"), out _, out _), "fehlt");
+});
+
+Test("WordLayout: Seitenbreite, Höhenbegrenzung, Beschriftung", () =>
+{
+    var (cx, cy) = WordLayout.Fit(800, 480, WordLayout.ContentWidthEmu(true), WordLayout.ContentHeightEmu(true, true));
+    Check(cx == WordLayout.ContentWidthEmu(true) && cy < WordLayout.ContentHeightEmu(true, true), "quer: Seitenbreite");
+    var (tx, ty) = WordLayout.Fit(480, 800, WordLayout.ContentWidthEmu(false), WordLayout.ContentHeightEmu(false, true));
+    Check(ty == WordLayout.ContentHeightEmu(false, true) && tx < WordLayout.ContentWidthEmu(false), "hohes Bild: Höhe begrenzt");
+    Check(WordLayout.CaptionText("Start", "Anlage1", t0) == "Start · Anlage1 · 26.11.2026", "Beschriftung");
+    Check(WordLayout.CaptionText("Start", " ", t0) == "Start · 26.11.2026", "ohne Anlage");
+});
+
+Test("Word: Export mit Deckblatt, Beschriftung, Querformat", () =>
+{
+    var d = TempDir();
+    var imgs = new List<WordImage>();
+    for (var i = 1; i <= 3; i++)
+    {
+        var path = Path.Combine(d, $"p{i}.png");
+        File.WriteAllBytes(path, FakePng(800, 480));
+        imgs.Add(new WordImage(path, $"Seite {i}", t0));
+    }
+    imgs.Add(new WordImage(Path.Combine(d, "fehlt.png"), "Fehlt", t0));
+    var o = new WordExportOptions { Anlage = "Anlage1", IncludeCoverPage = true, CoverTitle = "Titel XYZ" };
+    o.CoverLines.Add("Anlage: Anlage1");
+    var outPath = Path.Combine(d, "out.docx");
+    var res = WordExporter.Export(outPath, imgs, o);
+    Check(res.ImagesWritten == 3 && res.MissingFiles.SequenceEqual(new[] { "Fehlt" }), "Ergebnis");
+    using var zip = ZipFile.OpenRead(outPath);
+    Check(zip.Entries.Count(e => e.FullName.StartsWith("word/media/")) == 3, "eingebettete Bilder");
+    var xml = ReadEntry(zip, "word/document.xml");
+    Check(xml.Contains("Titel XYZ") && xml.Contains("Anlage: Anlage1"), "Deckblatt");
+    Check(xml.Contains("Seite 2 · Anlage1 · 26.11.2026"), "Beschriftung");
+    Check(xml.Contains("w:orient=\"landscape\""), "Querformat");
+    Check(xml.Contains($"cx=\"{WordLayout.ContentWidthEmu(true)}\""), "Seitenbreite");
+    Check(Regex.Matches(xml, "<w:pageBreakBefore").Count == 3, "Seitenumbrüche");
+    Check(!File.Exists(outPath + ".tmp"), "Temp-Datei übrig");
+});
+
+Test("Word: Hochformat ohne Deckblatt und ohne Beschriftung; leere Liste → Fehler", () =>
+{
+    var d = TempDir();
+    var imgs = new List<WordImage>();
+    for (var i = 1; i <= 2; i++)
+    {
+        var path = Path.Combine(d, $"p{i}.png");
+        File.WriteAllBytes(path, FakePng(800, 480));
+        imgs.Add(new WordImage(path, $"Seite {i}", t0));
+    }
+    var outPath = Path.Combine(d, "out.docx");
+    WordExporter.Export(outPath, imgs, new WordExportOptions { IncludeCaption = false, Landscape = false });
+    using (var zip = ZipFile.OpenRead(outPath))
+    {
+        var xml = ReadEntry(zip, "word/document.xml");
+        Check(xml.Contains("w:orient=\"portrait\"") && !xml.Contains("Seite 1 ·"), "Hochformat/ohne Beschriftung");
+        Check(Regex.Matches(xml, "<w:pageBreakBefore").Count == 1, "nur ein Umbruch");
+        Check(xml.Contains($"cx=\"{WordLayout.ContentWidthEmu(false)}\""), "Seitenbreite hoch");
+    }
+    var threw = false;
+    try { WordExporter.Export(Path.Combine(d, "leer.docx"), new List<WordImage>(), new WordExportOptions()); }
+    catch (InvalidOperationException) { threw = true; }
+    Check(threw, "keine Ausnahme bei leerer Liste");
+});
 
 // Test-Schutz: reversibel, Format wie DPAPI-Ausgabe ("dpapi:…")
 var prot = new FakeProtector();

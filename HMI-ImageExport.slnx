@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/HMIImageExport.Core/HMIImageExport.Core.csproj" />
+    <Project Path="src/HMIImageExport.Export/HMIImageExport.Export.csproj" />
     <Project Path="src/HMIImageExport.App/HMIImageExport.App.csproj" />
   </Folder>
   <Folder Name="/tests/">

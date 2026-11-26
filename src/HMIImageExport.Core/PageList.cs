@@ -15,6 +15,7 @@ public sealed class PageEntry
 public sealed class PageList
 {
     public string Anlage { get; set; } = "";
+    public string ProjectNumber { get; set; } = "";
     public List<PageEntry> Items { get; set; } = new();
 
     public int NextNumber() => Items.Count == 0 ? 1 : Items.Max(p => p.Number) + 1;

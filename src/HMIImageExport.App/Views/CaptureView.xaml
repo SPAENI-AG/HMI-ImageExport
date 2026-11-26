@@ -46,7 +46,10 @@
       <GroupBox Grid.Column="1" Header="{l:Tr Folder_Title}" Margin="5,0,0,10">
         <StackPanel>
           <TextBlock x:Name="tb_Folder" TextWrapping="Wrap" Margin="0,0,0,8"/>
-          <Button x:Name="bt_Folder" Content="{l:Tr Folder_Choose}" Click="bt_Folder_Click" HorizontalAlignment="Left"/>
+          <StackPanel Orientation="Horizontal">
+            <Button x:Name="bt_Folder" Content="{l:Tr Folder_Choose}" Click="bt_Folder_Click" Margin="0,0,8,0"/>
+            <Button x:Name="bt_Word" Content="{l:Tr Word_Create}" Style="{StaticResource PrimaryButton}" Click="bt_Word_Click"/>
+          </StackPanel>
         </StackPanel>
       </GroupBox>
     </Grid>

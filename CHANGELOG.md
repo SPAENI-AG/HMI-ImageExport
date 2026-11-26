@@ -11,3 +11,4 @@
 - App: Verbinden-Dialog, Panel-Anzeige mit Klick als Tipp, Seite speichern (F9), Seitenliste mit Vorschau, Umbenennen, Neu aufnehmen, Entfernen, Sortierung per Drag & Drop und Alt+↑/↓.
 - Core: RfbClient liefert deckende Pixel (Alpha 255).
 - RfbClient: Pseudo-Encodings Cursor (-239), XCursor (-240), PointerPos, LastRect werden überlesen (Siemens-Panel sendet den Mauszeiger ungefragt).
+- Word-Export (DocumentFormat.OpenXml, ohne Word-Installation): ein Bild pro Seite auf Seitenbreite, A4 quer oder hoch, optionale Beschreibungszeile und Deckblatt, Speicherort-Dialog mit Standardname; neues Projekt `HMIImageExport.Export`.

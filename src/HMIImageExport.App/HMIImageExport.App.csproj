@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\HMIImageExport.Core\HMIImageExport.Core.csproj" />
+    <ProjectReference Include="..\HMIImageExport.Export\HMIImageExport.Export.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Help\**\*" CopyToOutputDirectory="PreserveNewest" Condition="Exists('Help')" />

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,6 +9,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using HMIImageExport.Core;
 using HMIImageExport.Core.Vnc;
+using HMIImageExport.Export;
 using Microsoft.Win32;
 
 namespace HMIImageExport.App.Views;
@@ -33,6 +35,7 @@ public partial class CaptureView : UserControl
     private object[] _statusArgs = Array.Empty<object>();
     private Point _dragStart;
     private PageItem? _dragItem;
+    private WordExportOptions _word = new();
 
     public CaptureView()
     {
@@ -294,6 +297,49 @@ public partial class CaptureView : UserControl
         return ms.ToArray();
     }
 
+    private async void bt_Word_Click(object sender, RoutedEventArgs e)
+    {
+        if (_folder == null || _folder.Pages.Items.Count == 0) { ShowError(Loc.T("Word_NoPages")); return; }
+        _word.Anlage = _folder.Pages.Anlage;
+        _word.ProjectNumber = _folder.Pages.ProjectNumber;
+        var o = WordExportWindow.Ask(Owner, _word);
+        if (o == null) return;
+        _word = o;
+        _folder.Pages.Anlage = o.Anlage;
+        _folder.Pages.ProjectNumber = o.ProjectNumber;
+        _folder.Save();
+
+        var dlg = new SaveFileDialog
+        {
+            Title = Loc.T("Word_SaveTitle"),
+            Filter = Loc.T("Word_Filter"),
+            DefaultExt = ".docx",
+            InitialDirectory = _folder.Path,
+            FileName = FileNaming.DefaultWordFileName(o.Anlage, DateTime.Today),
+            OverwritePrompt = true,
+        };
+        if (dlg.ShowDialog(Owner) != true) return;
+
+        o.CoverTitle = Loc.T("Cover_Title");
+        o.CoverLines = new List<string> { Loc.T("Cover_Anlage", o.Anlage), Loc.T("Cover_Date", DateTime.Today.ToString("dd.MM.yyyy")) };
+        if (!string.IsNullOrWhiteSpace(o.ProjectNumber)) o.CoverLines.Add(Loc.T("Cover_Project", o.ProjectNumber));
+
+        var folder = _folder;
+        var images = folder.Pages.Items.Select(p => new WordImage(folder.FullPath(p), p.Name, p.CapturedAt)).ToList();
+        bt_Word.IsEnabled = false;
+        try
+        {
+            var res = await Task.Run(() => WordExporter.Export(dlg.FileName, images, o));
+            if (res.MissingFiles.Count > 0) ShowError(Loc.T("Word_Missing", string.Join("\n", res.MissingFiles)));
+            SetStatus("Word_Done", Path.GetFileName(dlg.FileName));
+            if (MessageBox.Show(Owner!, Loc.T("Word_OpenQuestion", dlg.FileName), Loc.T("Word_DialogTitle"),
+                    MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                Process.Start(new ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
+        }
+        catch (Exception ex) { ShowError(ex.Message); }
+        finally { UpdateButtons(); }
+    }
+
     private void lb_Pages_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateButtons();
 
     // ---------- Drag & Drop und Tasten ----------
@@ -376,6 +422,7 @@ public partial class CaptureView : UserControl
         var sel = lb_Pages.SelectedItem as PageItem;
         var idx = lb_Pages.SelectedIndex;
         bt_Save.IsEnabled = connected;
+        bt_Word.IsEnabled = _items.Count > 0;
         bt_Rename.IsEnabled = sel != null;
         bt_Remove.IsEnabled = sel != null;
         bt_Retake.IsEnabled = sel != null && connected;
