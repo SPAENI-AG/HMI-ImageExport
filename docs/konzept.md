@@ -50,7 +50,7 @@ Tabs: **Aufnahme** (Panel + Seitenliste) und **Einstellungen**.
 
 ## 4. Technische Entscheidungen
 
-- **VNC:** MarcusW.VncClient (liefert Framebuffer). Risiko: Reife der Bibliothek/Encodings → früh mit echtem Panel prüfen (Spike).
+- **VNC:** Eigener, schlanker RFB-Client im Core (`Vnc/RfbClient`), statt MarcusW.VncClient (Alpha-Stand 2021, nur .NET Core 3.1, keine WPF-Anzeige). Zielpanels: Siemens TP700 Comfort und Unified Panel (Sm@rtServer). Umfang: RFB 3.3/3.7/3.8, Anmeldung None und VNC-Passwort (max. 8 Zeichen), Encodings Raw, CopyRect, Hextile, DesktopSize. Austauschbar über `IVncSession`. Mit simuliertem Server testbar; Verhalten am echten Panel (Sm@rtServer aktivieren, Passwort, Port, max. Verbindungen) ist noch zu prüfen.
 - **Anzeige:** WriteableBitmap, Skalierung «Uniform»; Klickkoordinaten werden auf Panel-Auflösung zurückgerechnet. Pro Klick Down+Up (Touch-Tap); optional Verzögerung einstellbar.
 - **Screenshot:** aktueller Framebuffer → PNG (Originalauflösung des Panels, ohne Skalierung).
 - **Speicherung:** PNG im Anlagenordner; `pages.json` hält Reihenfolge, Namen, Zeitstempel.

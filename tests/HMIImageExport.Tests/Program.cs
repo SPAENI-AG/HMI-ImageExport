@@ -1,4 +1,8 @@
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using System.Text.RegularExpressions;
+using HMIImageExport.Core.Vnc;
 using HMIImageExport.Core;
 
 var failed = 0;
@@ -165,6 +169,117 @@ Test("PanelGeometry: Letterbox oben/unten und ungültige Grössen", () =>
     Check(!PanelGeometry.TryMapToPanel(1, 1, 0, 0, 800, 400, out _, out _), "Fenstergrösse 0");
     Check(!PanelGeometry.TryMapToPanel(1, 1, 800, 600, 0, 0, out _, out _), "Panelgrösse 0");
 });
+
+async Task<byte[]> Rd(Stream st, int n)
+{
+    var b = new byte[n]; var o = 0;
+    while (o < n) { var r = await st.ReadAsync(b.AsMemory(o, n - o)); if (r == 0) throw new EndOfStreamException(); o += r; }
+    return b;
+}
+byte[] DesDecrypt(byte[] data, string pw)   // unabhängige Gegenprobe zu VncAuth
+{
+    var key = new byte[8]; var pb = Encoding.Latin1.GetBytes(pw);
+    for (var i = 0; i < 8 && i < pb.Length; i++) { int v = pb[i], r = 0; for (var k = 0; k < 8; k++) { r = (r << 1) | (v & 1); v >>= 1; } key[i] = (byte)r; }
+    using var des = System.Security.Cryptography.DES.Create();
+    des.Mode = System.Security.Cryptography.CipherMode.ECB; des.Padding = System.Security.Cryptography.PaddingMode.None; des.Key = key;
+    using var d = des.CreateDecryptor();
+    return d.TransformFinalBlock(data, 0, 16);
+}
+
+Test("RFB: Anmeldung, Raw, Hextile und Tippen gegen simulierten Server", () => Task.Run(async () =>
+{
+    var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
+    var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+    var gate = new SemaphoreSlim(0);
+    bool authOk = false; byte[]? down = null, up = null; string? serverErr = null;
+    var server = Task.Run(async () =>
+    {
+        try
+        {
+            using var c = await listener.AcceptTcpClientAsync(); var st = c.GetStream();
+            await st.WriteAsync(Encoding.ASCII.GetBytes("RFB 003.008\n"));
+            if (Encoding.ASCII.GetString(await Rd(st, 12)) != "RFB 003.008\n") throw new Exception("Version");
+            await st.WriteAsync(new byte[] { 1, 2 });
+            if ((await Rd(st, 1))[0] != 2) throw new Exception("Sicherheitsart");
+            var ch = Enumerable.Range(1, 16).Select(i => (byte)(i * 7)).ToArray();
+            await st.WriteAsync(ch);
+            authOk = DesDecrypt(await Rd(st, 16), "geheim12").SequenceEqual(ch);
+            await st.WriteAsync(new byte[] { 0, 0, 0, 0 });
+            await Rd(st, 1);
+            var init = new List<byte> { 0, 4, 0, 2 }; init.AddRange(new byte[16]); init.AddRange(new byte[] { 0, 0, 0, 1, (byte)'T' });
+            await st.WriteAsync(init.ToArray());
+            await Rd(st, 20);
+            var hdr = await Rd(st, 4); await Rd(st, ((hdr[2] << 8) | hdr[3]) * 4);
+            await Rd(st, 10);
+            var raw = new List<byte> { 0, 0, 0, 1, 0, 0, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0 };
+            for (var p = 0; p < 8; p++) raw.AddRange(new byte[] { (byte)(p + 1), (byte)(p + 11), (byte)(p + 21), 0 });
+            await st.WriteAsync(raw.ToArray());
+            await Rd(st, 10);
+            await gate.WaitAsync(TimeSpan.FromSeconds(5));
+            await st.WriteAsync(new byte[] { 0, 0, 0, 1, 0, 0, 0, 0, 0, 4, 0, 2, 0, 0, 0, 5,
+                26, 10, 20, 30, 0, 1, 7, 8, 9, 0, 0x11, 0x10 });
+            await Rd(st, 10);
+            down = await Rd(st, 6); up = await Rd(st, 6);
+        }
+        catch (Exception ex) { serverErr = ex.Message; }
+    });
+
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+    await using var client = new RfbClient { PressDelayMs = 10 };
+    var updates = new SemaphoreSlim(0);
+    client.FrameUpdated += (_, _) => updates.Release();
+    await client.ConnectAsync("127.0.0.1", port, "geheim12", cts.Token);
+    Check(await updates.WaitAsync(TimeSpan.FromSeconds(5)), "Update 1 fehlt");
+    var s1 = client.GetSnapshot()!;
+    Check(s1.Width == 4 && s1.Height == 2 && s1.Bgra.Length == 32, "Grösse");
+    Check(s1.Bgra.Take(4).SequenceEqual(new byte[] { 1, 11, 21, 255 }), "Raw Pixel 0");
+    Check(s1.Bgra.Skip(20).Take(4).SequenceEqual(new byte[] { 6, 16, 26, 255 }), "Raw Pixel 5");
+    gate.Release();
+    Check(await updates.WaitAsync(TimeSpan.FromSeconds(5)), "Update 2 fehlt");
+    var s2 = client.GetSnapshot()!;
+    byte[] Px(int x, int y) => s2.Bgra.Skip((y * 4 + x) * 4).Take(4).ToArray();
+    Check(Px(0, 0).SequenceEqual(new byte[] { 10, 20, 30, 255 }), "Hextile Hintergrund");
+    Check(Px(1, 1).SequenceEqual(new byte[] { 7, 8, 9, 255 }) && Px(2, 1).SequenceEqual(new byte[] { 7, 8, 9, 255 }), "Hextile Subrect");
+    Check(Px(3, 1).SequenceEqual(new byte[] { 10, 20, 30, 255 }), "Hextile ausserhalb Subrect");
+    client.Tap(3, 1);
+    Check(await Task.WhenAny(server, Task.Delay(5000)) == server, "Server Timeout");
+    Check(serverErr == null, "Server: " + serverErr);
+    Check(authOk, "Passwort-Antwort falsch");
+    Check(down!.SequenceEqual(new byte[] { 5, 1, 0, 3, 0, 1 }), "Tippen: drücken");
+    Check(up!.SequenceEqual(new byte[] { 5, 0, 0, 3, 0, 1 }), "Tippen: loslassen");
+    listener.Stop();
+}).GetAwaiter().GetResult());
+
+Test("RFB: falsches Passwort → VncException", () => Task.Run(async () =>
+{
+    var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
+    var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+    _ = Task.Run(async () =>
+    {
+        using var c = await listener.AcceptTcpClientAsync(); var st = c.GetStream();
+        await st.WriteAsync(Encoding.ASCII.GetBytes("RFB 003.008\n"));
+        await Rd(st, 12);
+        await st.WriteAsync(new byte[] { 1, 2 });
+        await Rd(st, 1);
+        await st.WriteAsync(new byte[16]);
+        await Rd(st, 16);
+        await st.WriteAsync(new byte[] { 0, 0, 0, 1, 0, 0, 0, 4, (byte)'n', (byte)'o', (byte)'p', (byte)'e' });
+        await Task.Delay(300);
+    });
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+    await using var client = new RfbClient();
+    try { await client.ConnectAsync("127.0.0.1", port, "falsch", cts.Token); Check(false, "keine Ausnahme"); }
+    catch (VncException ex) { Check(ex.Message.Contains("Anmeldung fehlgeschlagen") && ex.Message.Contains("nope"), ex.Message); }
+    Check(!client.IsConnected, "darf nicht verbunden sein");
+    listener.Stop();
+}).GetAwaiter().GetResult());
+
+Test("RFB: Server spricht kein VNC / Verbindung verweigert", () => Task.Run(async () =>
+{
+    await using var client = new RfbClient();
+    try { await client.ConnectAsync("127.0.0.1", 1, "x", CancellationToken.None); Check(false, "keine Ausnahme"); }
+    catch (VncException) { }
+}).GetAwaiter().GetResult());
 
 // Test-Schutz: reversibel, Format wie DPAPI-Ausgabe ("dpapi:…")
 var prot = new FakeProtector();
