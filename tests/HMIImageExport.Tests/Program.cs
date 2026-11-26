@@ -143,6 +143,29 @@ Test("ProjectFolder: defekte pages.json → leer, .bad gesichert", () =>
     Check(pf.Pages.Items.Count == 0 && File.Exists(Path.Combine(d, ProjectFolder.ListFileName + ".bad")), "defekt");
 });
 
+Test("PanelGeometry: gleiches Seitenverhältnis", () =>
+{
+    Check(PanelGeometry.TryMapToPanel(400, 240, 800, 480, 1600, 960, out var x, out var y) && x == 800 && y == 480, "Mitte");
+    Check(PanelGeometry.TryMapToPanel(0, 0, 800, 480, 1600, 960, out x, out y) && x == 0 && y == 0, "Ecke");
+});
+
+Test("PanelGeometry: Letterbox (Fenster breiter als Panel)", () =>
+{
+    // Panel 800x480 im Fenster 1000x480 → Skala 1, links/rechts je 100 px Rand
+    Check(!PanelGeometry.TryMapToPanel(50, 100, 1000, 480, 800, 480, out _, out _), "Rand links muss false sein");
+    Check(PanelGeometry.TryMapToPanel(100, 0, 1000, 480, 800, 480, out var x, out var y) && x == 0 && y == 0, "Bildanfang");
+    Check(PanelGeometry.TryMapToPanel(500, 240, 1000, 480, 800, 480, out x, out y) && x == 400 && y == 240, "Mitte");
+    Check(!PanelGeometry.TryMapToPanel(900, 100, 1000, 480, 800, 480, out _, out _), "Rand rechts");
+});
+
+Test("PanelGeometry: Letterbox oben/unten und ungültige Grössen", () =>
+{
+    Check(!PanelGeometry.TryMapToPanel(100, 10, 800, 600, 800, 400, out _, out _), "Rand oben");
+    Check(PanelGeometry.TryMapToPanel(100, 100, 800, 600, 800, 400, out _, out var y) && y == 0, "Bildanfang oben");
+    Check(!PanelGeometry.TryMapToPanel(1, 1, 0, 0, 800, 400, out _, out _), "Fenstergrösse 0");
+    Check(!PanelGeometry.TryMapToPanel(1, 1, 800, 600, 0, 0, out _, out _), "Panelgrösse 0");
+});
+
 // Test-Schutz: reversibel, Format wie DPAPI-Ausgabe ("dpapi:…")
 var prot = new FakeProtector();
 
