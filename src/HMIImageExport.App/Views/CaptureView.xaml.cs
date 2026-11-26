@@ -24,6 +24,13 @@ public sealed class PageItem
     public ImageSource? Thumbnail { get; init; }
 }
 
+/// <summary>Sprache in der Auswahl «Diese Sprachen aufnehmen».</summary>
+public sealed class LangChoice
+{
+    public string Code { get; init; } = "";
+    public bool IsSelected { get; set; }
+}
+
 public partial class CaptureView : UserControl
 {
     private RfbClient? _session;
@@ -39,6 +46,7 @@ public partial class CaptureView : UserControl
     private WordExportOptions _word = new();
     private bool _capturing;
     private bool _pickingFlag;
+    private readonly List<LangChoice> _choices = new();
 
     public CaptureView()
     {
@@ -53,7 +61,8 @@ public partial class CaptureView : UserControl
         chk_Multi.IsChecked = App.Settings.MultiLanguage;
         tb_Languages.Text = App.Settings.Languages;
         tb_LangWait.Text = App.Settings.LangWaitMs.ToString();
-        RefillStartLanguages();
+        col_Right.Width = new GridLength(Math.Clamp(App.Settings.RightPaneWidth, 280, 800));
+        RefillChoices();
         UpdateFlagText();
         Loaded += OnLoaded;
         _items.CollectionChanged += (_, _) => tb_PagesEmpty.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -95,6 +104,12 @@ public partial class CaptureView : UserControl
         tb_Port.Text = p.Port.ToString();
         pb_Password.Password = p.Password;
         App.Settings.LastProfile = p.Name;
+        App.SaveSettings();
+    }
+
+    private void split_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    {
+        App.Settings.RightPaneWidth = col_Right.ActualWidth;
         App.SaveSettings();
     }
 
@@ -258,6 +273,7 @@ public partial class CaptureView : UserControl
     public async Task CaptureCurrentPageAsync()
     {
         if (_capturing) return;
+        if (_session is { IsConnected: true } live) await ParkPointerAsync(live);
         var snap = _session is { IsConnected: true } ? _session.GetSnapshot() : null;
         if (snap == null) { ShowError(Loc.T("Pages_NeedConnection")); return; }   // Bild jetzt sichern, bevor der Dialog öffnet
         if (App.Settings.MultiLanguage) { await CaptureMultiAsync(snap); return; }
@@ -284,9 +300,10 @@ public partial class CaptureView : UserControl
         catch (Exception ex) { ShowError(ex.Message); }
     }
 
-    private void bt_Retake_Click(object sender, RoutedEventArgs e)
+    private async void bt_Retake_Click(object sender, RoutedEventArgs e)
     {
         if (_folder == null || lb_Pages.SelectedItem is not PageItem item) return;
+        if (_session is { IsConnected: true } live) await ParkPointerAsync(live);
         var snap = _session is { IsConnected: true } ? _session.GetSnapshot() : null;
         if (snap == null) { ShowError(Loc.T("Pages_NeedConnection")); return; }
         try { _folder.ReplacePage(item.Entry, EncodePng(snap), DateTime.Now); Rebuild(item.Entry.Id); }
@@ -419,12 +436,40 @@ public partial class CaptureView : UserControl
 
     private void Lang_Changed(object sender, RoutedEventArgs e)
     {
-        App.Settings.MultiLanguage = chk_Multi.IsChecked == true;
-        App.Settings.Languages = tb_Languages.Text.Trim();
-        App.Settings.LangWaitMs = int.TryParse(tb_LangWait.Text.Trim(), out var ms) ? Math.Clamp(ms, 100, 5000) : 600;
-        tb_LangWait.Text = App.Settings.LangWaitMs.ToString();
+        var st = App.Settings;
+        st.MultiLanguage = chk_Multi.IsChecked == true;
+        st.Languages = tb_Languages.Text.Trim();
+        st.LangWaitMs = int.TryParse(tb_LangWait.Text.Trim(), out var ms) ? Math.Clamp(ms, 100, 5000) : 600;
+        tb_LangWait.Text = st.LangWaitMs.ToString();
+        if (ReferenceEquals(sender, tb_Languages)) RefillChoices();
+        st.LanguagesSelected = string.Join(", ", _choices.Where(c => c.IsSelected).Select(c => c.Code));
         App.SaveSettings();
+    }
+
+    /// <summary>Baut die Auswahl «Diese Sprachen aufnehmen» aus der Sprachliste; bekannte Sprachen behalten ihre Wahl, neue sind angewählt.</summary>
+    private void RefillChoices()
+    {
+        var langs = LanguageList.Parse(tb_Languages.Text);
+        var old = _choices.ToDictionary(x => x.Code, x => x.IsSelected, StringComparer.OrdinalIgnoreCase);
+        var saved = LanguageList.Parse(App.Settings.LanguagesSelected);
+        _choices.Clear();
+        foreach (var code in langs)
+        {
+            var sel = old.TryGetValue(code, out var o) ? o : saved.Count == 0 || saved.Contains(code, StringComparer.OrdinalIgnoreCase);
+            _choices.Add(new LangChoice { Code = code, IsSelected = sel });
+        }
+        ic_LangSelect.ItemsSource = null;
+        ic_LangSelect.ItemsSource = _choices;
         RefillStartLanguages();
+    }
+
+    private async Task ParkPointerAsync(RfbClient session)
+    {
+        if (!App.Settings.ParkPointer) return;
+        var f = session.GetSnapshot();
+        if (f == null) return;
+        session.MovePointer(f.Width - 1, f.Height - 1);
+        await Task.Delay(Math.Max(300, App.Settings.LangWaitMs));
     }
 
     private void RefillStartLanguages()
@@ -457,14 +502,17 @@ public partial class CaptureView : UserControl
         a.Width == b.Width && a.Height == b.Height && a.Bgra.AsSpan().SequenceEqual(b.Bgra);
 
     /// <summary>
-    /// Pro Seite alle Sprachen: die Sprach-Taste n-mal klicken (die n-te Umschaltung bringt das Panel zurück zur
-    /// Ausgangssprache), nach jedem Klick warten, bis das Bild ruhig ist, dann speichern.
+    /// Pro Seite die gewählten Sprachen: die Sprach-Taste n-mal klicken (die n-te Umschaltung bringt das Panel zurück
+    /// zur Ausgangssprache), nach jedem Klick warten, bis das Bild ruhig ist, und die angewählten Sprachen speichern.
     /// </summary>
     private async Task CaptureMultiAsync(FrameSnapshot first)
     {
         var s = App.Settings;
-        var langs = LanguageList.Parse(tb_Languages.Text);
+        RefillChoices();
+        var langs = _choices.Select(x => x.Code).ToList();
         if (langs.Count < 2) { ShowError(Loc.T("Lang_NeedTwo")); return; }
+        var wanted = _choices.Select(x => x.IsSelected).ToArray();
+        if (!wanted.Any(w => w)) { ShowError(Loc.T("Lang_NeedOne")); return; }
         if (s.LangButtonX < 0 || s.LangButtonY < 0 || s.LangSwitchMode != LangSwitchModes.Cycle) { ShowError(Loc.T("Lang_NeedButton")); return; }
         if (_folder == null && !ChooseFolder()) return;
 
@@ -477,7 +525,8 @@ public partial class CaptureView : UserControl
         var n = langs.Count;
         var start = Math.Clamp(cb_StartLang.SelectedIndex, 0, n - 1);
         var shots = new FrameSnapshot?[n];
-        shots[start] = first;
+        shots[start] = wanted[start] ? first : null;
+        var prevShot = shots[start];
         var quiet = TimeSpan.FromMilliseconds(s.LangWaitMs);
         var timeout = TimeSpan.FromMilliseconds(Math.Max(3000, s.LangWaitMs * 5));
         var unchanged = new List<string>();
@@ -494,9 +543,12 @@ public partial class CaptureView : UserControl
                 if (k == n) break;   // letzte Umschaltung: zurück zur Ausgangssprache
                 SetStatus("Lang_Progress", k + 1, n);
                 var idx = (start + k) % n;
-                var prev = (start + k - 1) % n;
-                shots[idx] = session.GetSnapshot();
-                if (shots[idx] != null && shots[prev] != null && SameImage(shots[idx]!, shots[prev]!)) unchanged.Add(langs[idx]);
+                if (!wanted[idx]) continue;
+                await ParkPointerAsync(session);
+                var snap = session.GetSnapshot();
+                shots[idx] = snap;
+                if (snap != null && prevShot != null && SameImage(snap, prevShot)) unchanged.Add(langs[idx]);
+                if (snap != null) prevShot = snap;
             }
         }
         catch (Exception ex)
@@ -516,10 +568,15 @@ public partial class CaptureView : UserControl
             var number = _folder.Pages.NextNumber();
             var group = Guid.NewGuid();
             PageEntry? last = null;
+            var saved = new List<string>();
             for (var i = 0; i < n; i++)
-                if (shots[i] != null) last = _folder.AddPage(name, EncodePng(shots[i]!), now, langs[i], number, group);
+            {
+                if (shots[i] == null) continue;
+                last = _folder.AddPage(name, EncodePng(shots[i]!), now, langs[i], number, group);
+                saved.Add(langs[i]);
+            }
             Rebuild(last?.Id);
-            SetStatus("Status_Saved", $"{name} ({string.Join(", ", langs)})");
+            SetStatus("Status_Saved", $"{name} ({string.Join(", ", saved)})");
         }
         catch (Exception ex) { ShowError(ex.Message); return; }
         if (unchanged.Count > 0) ShowError(Loc.T("Lang_NoChange", string.Join(", ", unchanged)));
@@ -541,6 +598,19 @@ public partial class CaptureView : UserControl
         var d = source as DependencyObject;
         while (d != null && d is not ListBoxItem) d = ParentOf(d);
         return d is ListBoxItem lbi ? lb.ItemContainerGenerator.ItemFromContainer(lbi) as PageItem : null;
+    }
+
+    private void lb_Pages_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (_folder == null) return;
+        var item = ItemAt(lb_Pages, e.OriginalSource);
+        if (item == null) return;
+        var folder = _folder;
+        var list = folder.Pages.Items
+            .Select(p => (Path: folder.FullPath(p), Title: string.IsNullOrEmpty(p.Language) ? p.Name : $"{p.Name} ({p.Language})"))
+            .ToList();
+        ImageViewWindow.ShowView(Owner, list, folder.Pages.IndexOf(item.Entry.Id));
+        e.Handled = true;
     }
 
     private void lb_Pages_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

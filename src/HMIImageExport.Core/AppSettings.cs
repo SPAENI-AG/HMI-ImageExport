@@ -40,6 +40,12 @@ public sealed class AppSettings
     public string LastProfile { get; set; } = "";
     /// <summary>Mehrsprachige Aufnahme: pro Seite alle Sprachen durchschalten.</summary>
     public bool MultiLanguage { get; set; }
+    /// <summary>Sprachen, die aufgenommen werden (leer = alle).</summary>
+    public string LanguagesSelected { get; set; } = "";
+    /// <summary>Mauszeiger vor der Aufnahme in die untere rechte Ecke schieben.</summary>
+    public bool ParkPointer { get; set; }
+    /// <summary>Breite der Seitenliste (Pixel), per Griff verschiebbar.</summary>
+    public double RightPaneWidth { get; set; } = 360;
     public string Languages { get; set; } = "DE, EN";
     /// <summary>Panel-Pixel der Sprach-Taste (-1 = nicht festgelegt). Ein Klick schaltet zur nächsten Sprache.</summary>
     /// <summary>Verfahren für den Sprachwechsel am Panel; bisher nur "cycle" (Klick = nächste Sprache).</summary>

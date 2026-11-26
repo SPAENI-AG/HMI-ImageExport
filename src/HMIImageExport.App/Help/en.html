@@ -36,6 +36,7 @@
 <li><b>Rename:</b> changes page name and file name.</li>
 <li><b>Retake:</b> replaces the image of the selected page with the current panel image.</li>
 <li><b>Remove:</b> deletes the page and its image file (with confirmation).</li>
+<li><b>View:</b> double-click a page to see the image large; browse with ◄ ►, <kbd>Esc</kbd> closes. The width of the page list can be changed with the handle between image and list.</li>
 <li><b>Order:</b> drag &amp; drop, ▲/▼, or <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd>. The list order is used for Word.</li>
 </ul></section>
 
@@ -45,7 +46,7 @@
 <li>In the <b>Multilingual</b> area, enter the languages as short codes in the order of the language button, e.g. <code>DE, EN, FR</code>. The number follows from the list.</li>
 <li><b>The panel currently shows:</b> select the language that is displayed right now.</li>
 <li>Click <b>Set language button</b> and then click the language button once in the panel image. Use <b>Test switching</b> to check that the panel changes to the next language.</li>
-<li>Enable <b>Capture all languages</b>. Then press <kbd>F9</kbd>: the tool saves the current language, clicks the button, waits until the image is quiet, saves the next language, and so on, and finally switches back to the original language.</li>
+<li>Under <b>Capture these languages</b> tick the languages you want (one, several or all). Enable <b>Capture multiple languages</b>. Then press <kbd>F9</kbd>: the tool saves the current language, clicks the button, waits until the image is quiet, saves the next language, and so on, and finally switches back to the original language.</li>
 </ol>
 <p>File names contain the code, e.g. <code>02_Seite_2_EN_2026-11-26_1501.png</code>. A page with all its languages shares one number; renaming applies to all languages of the page. In Word, all languages of a page follow each other, and the caption names the language.</p>
 <p>Method (Settings › Multilingual capture): currently <b>each click on the language button switches to the next language</b>. If the image does not change after switching, the tool reports the affected language; then check the language button and the quiet time.</p></section>
@@ -64,6 +65,7 @@
 
 <section id="troubleshooting"><h2>Troubleshooting</h2>
 <ul>
+<li><b>Mouse pointer visible in the screenshot:</b> Enable “Move the mouse pointer to the image edge before capturing” under Settings › Capture.</li>
 <li><b>“Unsupported encoding (number)”:</b> The panel sends a format the tool does not know. Please report the number.</li>
 <li><b>Image visible, clicks have no effect:</b> You probably used the view-only password. Enter the password for full control.</li>
 <li><b>Login failed:</b> Check the password. VNC passwords are limited to 8 characters.</li>

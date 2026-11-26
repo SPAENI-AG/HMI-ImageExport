@@ -17,3 +17,6 @@
 - Update-Hinweis über GitHub Releases mit Banner (Herunterladen, Versionshinweise, Überspringen), Menü «Nach Updates suchen».
 - Mehrsprachige Aufnahme: Sprachen als Kürzel eingeben, Sprach-Taste im Panel-Bild festlegen, pro Seite werden alle Sprachen automatisch durchgeschaltet und gespeichert (Dateiname mit Kürzel, Gruppe, Word mit Sprache in der Beschriftung). Einstellung «Sprachwechsel am Panel» (bisher: Klick = nächste Sprache).
 - RfbClient: TapAsync, UpdateCount, WaitForQuietAsync.
+- Mauszeiger wird nicht mehr ins Bild gezeichnet (Cursor-Encodings angefordert); Option «Mauszeiger vor der Aufnahme an den Bildrand schieben».
+- Mehrsprachig: beliebige Auswahl der aufzunehmenden Sprachen.
+- Seitenliste: Breite per Griff verschiebbar (wird gemerkt); Doppelklick zeigt das Bild gross (◄ ► blättern, Esc).

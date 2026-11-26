@@ -517,6 +517,7 @@ Test("LanguageList: Kürzel parsen", () =>
     Check(LanguageList.Parse(null).Count == 0 && LanguageList.Parse(" , ").Count == 0, "leer");
     Check(LanguageList.Parse("a/b, EN")[0] == "ab", "Bereinigung");
     Check(new AppSettings().LangSwitchMode == LangSwitchModes.Cycle && new AppSettings().LangButtonX == -1, "Standard");
+    Check(!new AppSettings().ParkPointer && new AppSettings().RightPaneWidth == 360 && new AppSettings().LanguagesSelected == "", "Standard 2");
 });
 
 Test("Mehrsprachig: Dateiname mit Sprache, Gruppe, Umbenennen für alle Sprachen", () =>

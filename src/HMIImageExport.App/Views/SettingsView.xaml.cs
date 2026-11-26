@@ -11,7 +11,7 @@ public partial class SettingsView : UserControl
     public SettingsView()
     {
         InitializeComponent();
-        Loaded += (_, _) => RefreshList(null);
+        Loaded += (_, _) => { RefreshList(null); chk_Park.IsChecked = App.Settings.ParkPointer; };
         UpdateEnabled();
     }
 
@@ -80,6 +80,12 @@ public partial class SettingsView : UserControl
         App.SaveSettings();
         RefreshList(null);
         if (App.Settings.Profiles.Count == 0) lb_Profiles_SelectionChanged(lb_Profiles, null!);
+    }
+
+    private void chk_Park_Click(object sender, RoutedEventArgs e)
+    {
+        App.Settings.ParkPointer = chk_Park.IsChecked == true;
+        App.SaveSettings();
     }
 
     private void cb_LangMode_SelectionChanged(object sender, SelectionChangedEventArgs e)

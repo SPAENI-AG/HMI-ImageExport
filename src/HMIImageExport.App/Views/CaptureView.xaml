@@ -72,12 +72,13 @@
 
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="360"/>
+        <ColumnDefinition Width="*" MinWidth="300"/>
+        <ColumnDefinition Width="10"/>
+        <ColumnDefinition x:Name="col_Right" Width="360" MinWidth="280" MaxWidth="800"/>
       </Grid.ColumnDefinitions>
 
       <Border Grid.Column="0" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource LineBrush}"
-              BorderThickness="1" CornerRadius="6" Margin="0,0,10,10">
+              BorderThickness="1" CornerRadius="6" Margin="0,0,0,10">
         <Grid>
           <Image x:Name="img_Panel" Stretch="Uniform" MouseLeftButtonDown="img_Panel_MouseLeftButtonDown"
                  RenderOptions.BitmapScalingMode="HighQuality"/>
@@ -86,7 +87,11 @@
         </Grid>
       </Border>
 
-      <GroupBox Grid.Column="1">
+      <GridSplitter Grid.Column="1" Width="10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                    Background="Transparent" ShowsPreview="False" ResizeBehavior="PreviousAndNext"
+                    ResizeDirection="Columns" Cursor="SizeWE" Margin="0,0,0,10" DragCompleted="split_DragCompleted"/>
+
+      <GroupBox Grid.Column="2">
         <GroupBox.Header>
           <StackPanel Orientation="Horizontal">
             <TextBlock Text="{l:Tr Pages_Title}" VerticalAlignment="Center"/>
@@ -108,6 +113,18 @@
               <TextBlock Text="{l:Tr Lang_List}" Style="{StaticResource MutedText}" FontSize="11"
                          TextWrapping="Wrap" Margin="0,6,0,2"/>
               <TextBox x:Name="tb_Languages" LostFocus="Lang_Changed"/>
+              <TextBlock Text="{l:Tr Lang_Select}" Margin="0,8,0,2"/>
+              <ItemsControl x:Name="ic_LangSelect">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <CheckBox Content="{Binding Code}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                              Margin="0,0,12,2" Click="Lang_Changed"/>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
               <TextBlock Text="{l:Tr Lang_Current}" Margin="0,8,0,2"/>
               <ComboBox x:Name="cb_StartLang"/>
               <WrapPanel Margin="0,8,0,0">
@@ -132,7 +149,8 @@
             <ListBox x:Name="lb_Pages" AllowDrop="True" HorizontalContentAlignment="Stretch"
                      BorderBrush="{StaticResource LineBrush}" SelectionChanged="lb_Pages_SelectionChanged"
                      PreviewMouseLeftButtonDown="lb_Pages_PreviewMouseLeftButtonDown"
-                     PreviewMouseMove="lb_Pages_PreviewMouseMove" Drop="lb_Pages_Drop">
+                     PreviewMouseMove="lb_Pages_PreviewMouseMove" Drop="lb_Pages_Drop"
+                     MouseDoubleClick="lb_Pages_MouseDoubleClick">
               <ListBox.ItemTemplate>
                 <DataTemplate>
                   <Grid Margin="2">

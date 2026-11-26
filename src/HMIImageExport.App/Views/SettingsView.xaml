@@ -52,6 +52,13 @@
           </StackPanel>
         </Grid>
       </GroupBox>
+      <GroupBox Header="{l:Tr Set_Capture_Title}">
+        <StackPanel>
+          <CheckBox x:Name="chk_Park" Content="{l:Tr Set_ParkPointer}" Click="chk_Park_Click"/>
+          <TextBlock Text="{l:Tr Set_ParkPointer_Note}" Style="{StaticResource MutedText}" FontSize="11"
+                     TextWrapping="Wrap" Margin="0,4,0,0"/>
+        </StackPanel>
+      </GroupBox>
       <GroupBox Header="{l:Tr Set_LangMode_Title}">
         <StackPanel>
           <TextBlock Text="{l:Tr Set_LangMode_Label}" Margin="0,0,0,4"/>

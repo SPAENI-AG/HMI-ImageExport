@@ -118,9 +118,11 @@ public sealed class RfbClient : IVncSession
             0, 0, 0, 0,
             32, 24, 0, 1, 0, 255, 0, 255, 0, 255, 16, 8, 0, 0, 0, 0,
         });
-        // Encodings: Hextile, CopyRect, Raw, DesktopSize
-        var enc = new List<byte> { 2, 0, 0, 4 };
-        foreach (var e in new[] { 5, 1, 0, -223 }) enc.AddRange(BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(e)));
+        // Encodings: Hextile, CopyRect, Raw, DesktopSize. Cursor/XCursor: Der Server zeichnet den Mauszeiger dann
+        // nicht ins Bild, sondern sendet ihn getrennt (wird hier nicht gezeichnet → kein Zeiger in Screenshots).
+        var encodings = new[] { 5, 1, 0, -223, -239, -240 };
+        var enc = new List<byte> { 2, 0, 0, (byte)encodings.Length };
+        foreach (var e in encodings) enc.AddRange(BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(e)));
         Send(enc.ToArray());
         SendUpdateRequest(false);
     }
@@ -355,6 +357,14 @@ public sealed class RfbClient : IVncSession
             await Task.Delay(30, ct);
         }
         return false;
+    }
+
+    /// <summary>Bewegt den Zeiger ohne Taste (z. B. aus dem Bild heraus in die Ecke).</summary>
+    public void MovePointer(int x, int y)
+    {
+        if (!_connected) return;
+        try { SendPointer(0, Math.Clamp(x, 0, Math.Max(0, _w - 1)), Math.Clamp(y, 0, Math.Max(0, _h - 1))); }
+        catch (Exception) { }
     }
 
     private void SendPointer(byte mask, int x, int y) =>

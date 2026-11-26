@@ -108,7 +108,7 @@ public static class Strings
             ["Set_Folder"] = ("Einstellungsordner öffnen", "Open settings folder"),
             ["Conn_Profile"] = ("Profil", "Profile"),
             ["Lang_Section"] = ("Mehrsprachig", "Multilingual"),
-            ["Lang_Enable"] = ("Alle Sprachen aufnehmen", "Capture all languages"),
+            ["Lang_Enable"] = ("Mehrsprachig aufnehmen", "Capture multiple languages"),
             ["Lang_List"] = ("Sprachen in der Reihenfolge der Sprach-Taste, mit Komma getrennt:", "Languages in the order of the language button, comma-separated:"),
             ["Lang_Current"] = ("Das Panel zeigt gerade:", "The panel currently shows:"),
             ["Lang_SetButton"] = ("Sprach-Taste festlegen", "Set language button"),
@@ -125,6 +125,13 @@ public static class Strings
             ["Set_LangMode_Label"] = ("Sprachwechsel am Panel:", "Language switching on the panel:"),
             ["Set_LangMode_Cycle"] = ("Ein Klick auf die Sprach-Taste schaltet zur nächsten Sprache (Standard)", "One click on the language button switches to the next language (default)"),
             ["Set_LangMode_Note"] = ("Weitere Verfahren, z. B. eine Auswahlliste, sind noch nicht umgesetzt.", "Other methods, e.g. a selection list, are not implemented yet."),
+            ["Lang_Select"] = ("Diese Sprachen aufnehmen:", "Capture these languages:"),
+            ["Lang_NeedOne"] = ("Bitte mindestens eine Sprache zum Aufnehmen anwählen.", "Please select at least one language to capture."),
+            ["Set_Capture_Title"] = ("Aufnahme", "Capture"),
+            ["Set_ParkPointer"] = ("Mauszeiger vor der Aufnahme an den Bildrand schieben", "Move the mouse pointer to the image edge before capturing"),
+            ["Set_ParkPointer_Note"] = ("Hilft, wenn der Mauszeiger im Screenshot sichtbar ist. Der Zeiger wird in die untere rechte Ecke bewegt, es wird nichts gedrückt.", "Helps if the mouse pointer is visible in the screenshot. The pointer is moved to the lower right corner; nothing is pressed."),
+            ["View_Missing"] = ("Bilddatei nicht gefunden.", "Image file not found."),
+            ["View_Hint"] = ("◄ ► blättern · Esc schliessen", "◄ ► browse · Esc close"),
             ["Common_Close"] = ("Schliessen", "Close"),
         };
 }
