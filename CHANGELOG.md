@@ -12,3 +12,6 @@
 - Core: RfbClient liefert deckende Pixel (Alpha 255).
 - RfbClient: Pseudo-Encodings Cursor (-239), XCursor (-240), PointerPos, LastRect werden überlesen (Siemens-Panel sendet den Mauszeiger ungefragt).
 - Word-Export (DocumentFormat.OpenXml, ohne Word-Installation): ein Bild pro Seite auf Seitenbreite, A4 quer oder hoch, optionale Beschreibungszeile und Deckblatt, Speicherort-Dialog mit Standardname; neues Projekt `HMIImageExport.Export`.
+- Einstellungen: Verbindungsprofile mit Passwort per DPAPI (%APPDATA%\HMIImageExport), Profilauswahl, letzter Anlagenordner und Word-Optionen werden gemerkt.
+- Hilfe (DE/EN) über lokalen Webserver, ?-Knöpfe, F1, Menü Hilfe (Schnellstart, Fehlersuche, Installation, Einstellungsordner).
+- Update-Hinweis über GitHub Releases mit Banner (Herunterladen, Versionshinweise, Überspringen), Menü «Nach Updates suchen».

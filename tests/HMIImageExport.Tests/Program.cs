@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -406,6 +407,108 @@ Test("Word: Hochformat ohne Deckblatt und ohne Beschriftung; leere Liste → Feh
     try { WordExporter.Export(Path.Combine(d, "leer.docx"), new List<WordImage>(), new WordExportOptions()); }
     catch (InvalidOperationException) { threw = true; }
     Check(threw, "keine Ausnahme bei leerer Liste");
+});
+
+Test("UpdateChecker: Versionsvergleich", () =>
+{
+    Check(UpdateChecker.IsNewer("0.1.0", "v0.2.0") && UpdateChecker.IsNewer("1.9.9", "2.0") && UpdateChecker.IsNewer("1.0.0", "1.0.1-beta"), "neuer");
+    Check(!UpdateChecker.IsNewer("1.2.0", "v1.2.0") && !UpdateChecker.IsNewer("1.2.0", "1.1.9"), "nicht neuer");
+    Check(!UpdateChecker.IsNewer("1.0.0", "unsinn") && !UpdateChecker.IsNewer("x", "1.0.0"), "ungültig");
+});
+
+Test("UpdateChecker: Platzhalter, Intervall, URL-Prüfung", () =>
+{
+    Check(!UpdateChecker.IsEnabled("OWNER/HMI-ImageExport") && !UpdateChecker.IsEnabled("") && !UpdateChecker.IsEnabled(null) && !UpdateChecker.IsEnabled("ohneSlash"), "abgeschaltet");
+    Check(UpdateChecker.IsEnabled("SPAENI-AG/HMI-ImageExport"), "aktiv");
+    var now = new DateTime(2026, 11, 26, 12, 0, 0, DateTimeKind.Utc);
+    Check(UpdateChecker.ShouldCheck(null, now, TimeSpan.FromHours(24)), "nie geprüft");
+    Check(!UpdateChecker.ShouldCheck(now.AddHours(-2), now, TimeSpan.FromHours(24)), "zu früh");
+    Check(UpdateChecker.ShouldCheck(now.AddHours(-25), now, TimeSpan.FromHours(24)), "fällig");
+    Check(UpdateChecker.ShouldCheck(now.AddHours(5), now, TimeSpan.FromHours(24)), "Zeit in der Zukunft");
+    Check(UpdateChecker.IsSafeUrl("https://github.com/a/b/releases") && !UpdateChecker.IsSafeUrl("http://github.com/x") &&
+          !UpdateChecker.IsSafeUrl("https://evil.example/github.com") && !UpdateChecker.IsSafeUrl("file:///c:/x.exe") && !UpdateChecker.IsSafeUrl(null), "URL");
+});
+
+Test("UpdateChecker: Release-JSON lesen", () =>
+{
+    var json = "{\"tag_name\":\"v1.2.0\",\"html_url\":\"https://github.com/ORG/r/releases/tag/v1.2.0\",\"body\":\"Notiz\"," +
+               "\"assets\":[{\"name\":\"x.sha256\",\"browser_download_url\":\"https://github.com/ORG/r/releases/download/v1.2.0/x.sha256\"}," +
+               "{\"name\":\"HMIImageExport_1.2.0_win-x64.zip\",\"browser_download_url\":\"https://github.com/ORG/r/releases/download/v1.2.0/z.zip\"}]}";
+    var i = UpdateChecker.ParseRelease(json, "ORG/r")!;
+    Check(i.Version == "1.2.0" && i.Notes == "Notiz" && i.DownloadUrl.EndsWith("z.zip") && i.ReleaseUrl.EndsWith("v1.2.0"), "Felder");
+    var bad = UpdateChecker.ParseRelease("{\"tag_name\":\"v2.0.0\",\"html_url\":\"https://evil.example/x\",\"assets\":[]}", "ORG/r")!;
+    Check(bad.ReleaseUrl == "https://github.com/ORG/r/releases" && bad.DownloadUrl == bad.ReleaseUrl, "unsichere URL ersetzt");
+    Check(UpdateChecker.ParseRelease("{}", "ORG/r") == null, "ohne tag_name");
+});
+
+Test("HelpServer: Pfad-Auflösung schützt vor ../", () =>
+{
+    var d = TempDir();
+    var root = Path.Combine(d, "Help"); Directory.CreateDirectory(root);
+    File.WriteAllText(Path.Combine(root, "de.html"), "<html/>");
+    File.WriteAllText(Path.Combine(d, "geheim.txt"), "x");
+    Check(HelpServer.ResolvePath(root, "/de.html") != null, "gültig");
+    Check(HelpServer.ResolvePath(root, "/") == null && HelpServer.ResolvePath(root, "/fehlt.html") == null, "leer/fehlt");
+    Check(HelpServer.ResolvePath(root, "/../geheim.txt") == null, "../");
+    Check(HelpServer.ResolvePath(root, "/%2e%2e/geheim.txt") == null, "%2e%2e");
+    Check(HelpServer.ResolvePath(root, "/..\\geheim.txt") == null || !OperatingSystem.IsWindows(), "..\\ unter Windows");
+    Check(HelpServer.ResolvePath(root, "/Help/../../geheim.txt") == null, "verschachtelt");
+});
+
+Test("HelpServer: liefert Dateien nur auf localhost, 404 für Rest", () => Task.Run(async () =>
+{
+    var d = TempDir();
+    File.WriteAllText(Path.Combine(d, "de.html"), "<h1>Hallo</h1>");
+    using var server = new HelpServer(d);
+    server.Start();
+    Check(server.BaseUrl.StartsWith("http://127.0.0.1:"), "nur Loopback");
+    using var http = new HttpClient();
+    var ok = await http.GetAsync(server.BaseUrl + "de.html");
+    Check(ok.IsSuccessStatusCode && (await ok.Content.ReadAsStringAsync()).Contains("Hallo") &&
+          ok.Content.Headers.ContentType!.MediaType == "text/html", "200 + HTML");
+    Check((await http.GetAsync(server.BaseUrl + "nix.html")).StatusCode == HttpStatusCode.NotFound, "404");
+    Check((await http.PostAsync(server.BaseUrl + "de.html", new StringContent(""))).StatusCode == HttpStatusCode.MethodNotAllowed, "405");
+}).GetAwaiter().GetResult());
+
+string? RepoRoot()
+{
+    var dir = new DirectoryInfo(AppContext.BaseDirectory);
+    while (dir != null) { if (File.Exists(Path.Combine(dir.FullName, "HMI-ImageExport.slnx"))) return dir.FullName; dir = dir.Parent; }
+    return null;
+}
+HashSet<string> Ids(string html) => Regex.Matches(html, "\\bid=\"([^\"]+)\"").Select(m => m.Groups[1].Value).ToHashSet();
+
+Test("Hilfe: gleiche Anker in DE und EN, alle Anker vorhanden", () =>
+{
+    var root = RepoRoot() ?? throw new Exception("Repo-Wurzel nicht gefunden");
+    var help = Path.Combine(root, "src", "HMIImageExport.App", "Help");
+    var de = Ids(File.ReadAllText(Path.Combine(help, "de.html")));
+    var en = Ids(File.ReadAllText(Path.Combine(help, "en.html")));
+    Check(de.SetEquals(en), "Anker unterschiedlich: " + string.Join(",", de.Except(en).Concat(en.Except(de))));
+    foreach (var a in HelpAnchors.All) Check(de.Contains(a) && en.Contains(a), "Anker fehlt: " + a);
+    Check(File.Exists(Path.Combine(help, "style.css")), "style.css fehlt");
+});
+
+Test("Hilfe: jeder ?-Knopf und jedes Menü-Tag zeigt auf einen vorhandenen Anker", () =>
+{
+    var root = RepoRoot() ?? throw new Exception("Repo-Wurzel nicht gefunden");
+    var app = Path.Combine(root, "src", "HMIImageExport.App");
+    var de = Ids(File.ReadAllText(Path.Combine(app, "Help", "de.html")));
+    var en = Ids(File.ReadAllText(Path.Combine(app, "Help", "en.html")));
+    var tags = new List<string>();
+    foreach (var f in Directory.GetFiles(app, "*.xaml", SearchOption.AllDirectories))
+    {
+        var x = File.ReadAllText(f);
+        foreach (Match m in Regex.Matches(x, "<(Button|MenuItem)\\b[^>]*>"))
+        {
+            var el = m.Value;
+            var isHelp = el.Contains("StaticResource HelpButton") || el.Contains("mi_Help_Click");
+            var tag = Regex.Match(el, "\\bTag=\"([^\"]+)\"");
+            if (isHelp && tag.Success) tags.Add(tag.Groups[1].Value);
+        }
+    }
+    Check(tags.Count >= 6, "zu wenige Hilfe-Verweise gefunden: " + tags.Count);
+    foreach (var t in tags) Check(de.Contains(t) && en.Contains(t), "Anker fehlt für Tag: " + t);
 });
 
 // Test-Schutz: reversibel, Format wie DPAPI-Ausgabe ("dpapi:…")

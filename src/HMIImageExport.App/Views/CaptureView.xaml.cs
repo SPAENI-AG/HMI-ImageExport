@@ -41,11 +41,53 @@ public partial class CaptureView : UserControl
     {
         InitializeComponent();
         lb_Pages.ItemsSource = _items;
+        _word = new WordExportOptions
+        {
+            IncludeCaption = App.Settings.WordIncludeCaption,
+            IncludeCoverPage = App.Settings.WordIncludeCoverPage,
+            Landscape = App.Settings.WordLandscape,
+        };
+        Loaded += OnLoaded;
         _items.CollectionChanged += (_, _) => tb_PagesEmpty.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         Loc.Instance.LanguageChanged += (_, _) => Dispatcher.BeginInvoke(() => { ApplyStatus(); UpdateFolderText(); Rebuild(SelectedId()); });
         ApplyStatus();
         UpdateFolderText();
         UpdateButtons();
+    }
+
+    private bool _firstLoad = true;
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        RefreshProfiles(_firstLoad);
+        if (_firstLoad)
+        {
+            _firstLoad = false;
+            var last = App.Settings.LastProjectFolder;
+            if (!string.IsNullOrEmpty(last) && Directory.Exists(last)) TryOpenFolder(last);
+        }
+    }
+
+    private void RefreshProfiles(bool useLast)
+    {
+        var name = (cb_Profile.SelectedItem as ConnectionProfile)?.Name ?? (useLast ? App.Settings.LastProfile : null);
+        cb_Profile.ItemsSource = null;
+        cb_Profile.ItemsSource = App.Settings.Profiles;
+        if (!string.IsNullOrEmpty(name))
+        {
+            var p = App.Settings.Profiles.FirstOrDefault(x => x.Name == name);
+            if (p != null) cb_Profile.SelectedItem = p;
+        }
+    }
+
+    private void cb_Profile_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (cb_Profile.SelectedItem is not ConnectionProfile p) return;
+        tb_Host.Text = p.Host;
+        tb_Port.Text = p.Port.ToString();
+        pb_Password.Password = p.Password;
+        App.Settings.LastProfile = p.Name;
+        App.SaveSettings();
     }
 
     private Window? Owner => Window.GetWindow(this);
@@ -170,11 +212,18 @@ public partial class CaptureView : UserControl
     {
         var dlg = new OpenFolderDialog { Title = Loc.T("Folder_ChooseTitle") };
         if (dlg.ShowDialog(Owner) != true) return false;
+        return TryOpenFolder(dlg.FolderName);
+    }
+
+    private bool TryOpenFolder(string path)
+    {
         try
         {
-            _folder = ProjectFolder.Open(dlg.FolderName);
+            _folder = ProjectFolder.Open(path);
             UpdateFolderText();
             Rebuild(null);
+            App.Settings.LastProjectFolder = path;
+            App.SaveSettings();
             return true;
         }
         catch (Exception ex) { ShowError(ex.Message); return false; }
@@ -305,6 +354,10 @@ public partial class CaptureView : UserControl
         var o = WordExportWindow.Ask(Owner, _word);
         if (o == null) return;
         _word = o;
+        App.Settings.WordIncludeCaption = o.IncludeCaption;
+        App.Settings.WordIncludeCoverPage = o.IncludeCoverPage;
+        App.Settings.WordLandscape = o.Landscape;
+        App.SaveSettings();
         _folder.Pages.Anlage = o.Anlage;
         _folder.Pages.ProjectNumber = o.ProjectNumber;
         _folder.Save();

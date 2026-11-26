@@ -36,6 +36,11 @@ public sealed class AppSettings
     public List<ConnectionProfile> Profiles { get; set; } = new();
     public bool WordIncludeCaption { get; set; } = true;
     public bool WordIncludeCoverPage { get; set; } = false;
+    public bool WordLandscape { get; set; } = true;
+    public string LastProfile { get; set; } = "";
+    /// <summary>Zeitpunkt (UTC) der letzten Update-Prüfung.</summary>
+    public DateTime? LastUpdateCheck { get; set; }
+    public string SkippedVersion { get; set; } = "";
 }
 
 /// <summary>Lädt/speichert settings.json in %APPDATA%\HMIImageExport. Passwörter nur geschützt.</summary>

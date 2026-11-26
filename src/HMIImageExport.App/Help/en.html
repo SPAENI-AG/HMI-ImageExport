@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HMI-ImageExport – Help</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header><span class="lang"><a href="de.html">Deutsch</a></span><h1>HMI-ImageExport – Help</h1></header>
+<div class="layout">
+<nav>
+<a href="#quickstart">Quick start</a><a href="#connect">Connect to panel</a><a href="#folder">Plant folder</a>
+<a href="#capture">Capture pages</a><a href="#pages">Page list</a><a href="#word">Create Word</a>
+<a href="#settings">Settings</a><a href="#troubleshooting">Troubleshooting</a><a href="#install">Installation</a>
+<a href="#security">Passwords and security</a><a href="#updates">Updates</a>
+</nav>
+<main>
+<section id="quickstart"><h2>Quick start</h2>
+<ol>
+<li>Enter host/IP, port (usually <code>5900</code>) and password of the panel at the top and click <b>Connect</b>.</li>
+<li>The panel image appears. A mouse click in the image acts like a finger tap on the panel.</li>
+<li>Open a page on the panel and press <kbd>F9</kbd>. Enter a page name; the image is saved immediately.</li>
+<li>Capture all pages, check the order, then click <b>Create Word …</b>.</li>
+</ol></section>
+
+<section id="connect"><h2>Connect to panel</h2>
+<p>VNC access must be enabled on the panel (on Siemens panels this is the Sm@rtServer; the setting depends on the panel and the engineering tool). Enter host/IP, port and password as you would in the UltraVNC viewer.</p>
+<p>For several panels, create a <b>connection profile</b> in the settings and select it at the top under “Profile”.</p>
+<p>Many panels allow only one connection at a time: close an open UltraVNC viewer first.</p></section>
+
+<section id="folder"><h2>Plant folder</h2>
+<p>All images of a plant are stored in one folder, for example <code>Anlage1</code>. The folder is chosen on the first save or via <b>File › Open</b> (<kbd>Ctrl+O</kbd>). An existing folder is loaded with its page list (file <code>pages.json</code>).</p></section>
+
+<section id="capture"><h2>Capture pages</h2>
+<p><kbd>F9</kbd> or <b>Save page</b> saves the current panel image in original resolution as PNG, for example <code>01_Start_2026-11-26_1432.png</code>. The image is taken at the moment you press the key; the page name is asked afterwards.</p></section>
+
+<section id="pages"><h2>Page list</h2>
+<ul>
+<li><b>Rename:</b> changes page name and file name.</li>
+<li><b>Retake:</b> replaces the image of the selected page with the current panel image.</li>
+<li><b>Remove:</b> deletes the page and its image file (with confirmation).</li>
+<li><b>Order:</b> drag &amp; drop, ▲/▼, or <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd>. The list order is used for Word.</li>
+</ul></section>
+
+<section id="word"><h2>Create Word</h2>
+<p>Inserts all images of the list one after another into a new <code>.docx</code>, one image per page, scaled to page width. Word does not need to be installed.</p>
+<ul>
+<li><b>Caption:</b> “page name · plant · date” below each image.</li>
+<li><b>Cover page:</b> title, plant, date and optional project number.</li>
+<li><b>Landscape:</b> A4 landscape (recommended for panel images) or portrait.</li>
+</ul>
+<p>Default name: <code>Anlage1_Touchpanel_2026-11-26.docx</code>. The images are embedded in the document.</p></section>
+
+<section id="settings"><h2>Settings</h2>
+<p>Connection profiles (name, host, port, password) are managed here. The data is stored in <code>%APPDATA%\HMIImageExport\settings.json</code>. <b>Help › Open settings folder</b> takes you there. The language is switched via <b>View › Language</b>.</p></section>
+
+<section id="troubleshooting"><h2>Troubleshooting</h2>
+<ul>
+<li><b>“Unsupported encoding (number)”:</b> The panel sends a format the tool does not know. Please report the number.</li>
+<li><b>Image visible, clicks have no effect:</b> You probably used the view-only password. Enter the password for full control.</li>
+<li><b>Login failed:</b> Check the password. VNC passwords are limited to 8 characters.</li>
+<li><b>Timeout / cannot connect:</b> Check IP, port, network and firewall. Check that VNC access is enabled on the panel and that no other connection (e.g. UltraVNC viewer) is open.</li>
+<li><b>Word file cannot be saved:</b> If it is still open in Word, close it or choose another name.</li>
+</ul></section>
+
+<section id="install"><h2>Installation</h2>
+<p>The program is portable: unpack the ZIP file and start <code>HMIImageExport.exe</code>. No installation and no .NET are required. To remove it, delete the folder; settings are stored separately in <code>%APPDATA%\HMIImageExport</code>.</p></section>
+
+<section id="security"><h2>Passwords and security</h2>
+<p>Passwords are stored encrypted only (Windows data protection API, bound to your Windows user account) and never in clear text in the file or the log. A copied <code>settings.json</code> does not work on another PC or user; the password must be entered again there.</p>
+<p>VNC protects the password only weakly and transmits images unencrypted. Use connections only inside the plant network. Screenshots may contain customer data: do not store plant folders publicly.</p></section>
+
+<section id="updates"><h2>Updates</h2>
+<p>The program checks GitHub at most once a day for a new version and then shows a notice. <b>Help › Check for updates</b> checks immediately. Nothing is installed automatically: <b>Download</b> opens the ZIP file in the browser.</p></section>
+</main></div>
+</body></html>

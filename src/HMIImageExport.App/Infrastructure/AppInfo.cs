@@ -15,6 +15,10 @@ public static class AppInfo
 
     public static string Version { get; } =
         (Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0)).ToString(3);
+    /// <summary>"Organisation/Repo" aus Directory.Build.props; OWNER/… = Update-Prüfung aus.</summary>
+    public static string GitHubRepository { get; } =
+        Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == "GitHubRepository")?.Value ?? "";
     public static string VersionText => $"Version {Version}";
     public static string Copyright => $"© {DateTime.Now.Year} {Company}";
 }

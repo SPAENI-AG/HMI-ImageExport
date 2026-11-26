@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="de">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HMI-ImageExport – Hilfe</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header><span class="lang"><a href="en.html">English</a></span><h1>HMI-ImageExport – Hilfe</h1></header>
+<div class="layout">
+<nav>
+<a href="#quickstart">Schnellstart</a><a href="#connect">Panel verbinden</a><a href="#folder">Anlagenordner</a>
+<a href="#capture">Seiten aufnehmen</a><a href="#pages">Seitenliste</a><a href="#word">Word erstellen</a>
+<a href="#settings">Einstellungen</a><a href="#troubleshooting">Fehlersuche</a><a href="#install">Installation</a>
+<a href="#security">Passwörter und Sicherheit</a><a href="#updates">Updates</a>
+</nav>
+<main>
+<section id="quickstart"><h2>Schnellstart</h2>
+<ol>
+<li>Oben Host/IP, Port (meist <code>5900</code>) und Passwort des Panels eingeben und auf <b>Verbinden</b> klicken.</li>
+<li>Das Panel-Bild erscheint. Ein Mausklick im Bild wirkt wie ein Fingertipp auf dem Panel.</li>
+<li>Seite aufrufen und <kbd>F9</kbd> drücken. Name der Seite eingeben, das Bild wird sofort gespeichert.</li>
+<li>Alle Seiten aufnehmen, Reihenfolge prüfen, dann <b>Word erstellen …</b>.</li>
+</ol></section>
+
+<section id="connect"><h2>Panel verbinden</h2>
+<p>Auf dem Panel muss der VNC-Zugang aktiviert sein (bei Siemens-Panels der Sm@rtServer; die Einstellung hängt vom Panel und vom Engineering-Tool ab). Host/IP, Port und Passwort wie beim UltraVNC-Viewer eingeben.</p>
+<p>Bei mehreren Panels ein <b>Verbindungsprofil</b> in den Einstellungen anlegen und oben unter «Profil» auswählen.</p>
+<p>Viele Panels erlauben nur eine Verbindung gleichzeitig: einen offenen UltraVNC-Viewer vorher schliessen.</p></section>
+
+<section id="folder"><h2>Anlagenordner</h2>
+<p>Alle Bilder einer Anlage liegen in einem Ordner, zum Beispiel <code>Anlage1</code>. Der Ordner wird beim ersten Speichern oder über <b>Datei › Öffnen</b> (<kbd>Ctrl+O</kbd>) gewählt. Ein bestehender Ordner wird mit seiner Seitenliste geladen (Datei <code>pages.json</code>).</p></section>
+
+<section id="capture"><h2>Seiten aufnehmen</h2>
+<p><kbd>F9</kbd> oder <b>Seite speichern</b> sichert das aktuelle Panel-Bild in Originalauflösung als PNG, zum Beispiel <code>01_Start_2026-11-26_1432.png</code>. Das Bild wird im Moment des Tastendrucks gesichert, danach wird der Seitenname abgefragt.</p></section>
+
+<section id="pages"><h2>Seitenliste</h2>
+<ul>
+<li><b>Umbenennen:</b> ändert Seitennamen und Dateinamen.</li>
+<li><b>Neu aufnehmen:</b> ersetzt das Bild der gewählten Seite durch das aktuelle Panel-Bild.</li>
+<li><b>Entfernen:</b> löscht die Seite und die Bilddatei (mit Rückfrage).</li>
+<li><b>Reihenfolge:</b> per Drag &amp; Drop, mit ▲/▼ oder mit <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd>. Die Reihenfolge der Liste gilt für Word.</li>
+</ul></section>
+
+<section id="word"><h2>Word erstellen</h2>
+<p>Fügt alle Bilder der Liste nacheinander in ein neues <code>.docx</code> ein, ein Bild pro Seite, auf Seitenbreite skaliert. Word muss nicht installiert sein.</p>
+<ul>
+<li><b>Beschreibungszeile:</b> «Seitenname · Anlage · Datum» unter jedem Bild.</li>
+<li><b>Deckblatt:</b> Titel, Anlage, Datum und optional Projektnummer.</li>
+<li><b>Querformat:</b> A4 quer (empfohlen für Panel-Bilder) oder hoch.</li>
+</ul>
+<p>Standardname: <code>Anlage1_Touchpanel_2026-11-26.docx</code>. Die Bilder sind im Dokument eingebettet.</p></section>
+
+<section id="settings"><h2>Einstellungen</h2>
+<p>Hier werden Verbindungsprofile (Name, Host, Port, Passwort) verwaltet. Die Daten liegen unter <code>%APPDATA%\HMIImageExport\settings.json</code>. Über <b>Hilfe › Einstellungsordner öffnen</b> kommen Sie direkt dorthin. Die Sprache wird über <b>Ansicht › Sprache</b> umgeschaltet.</p></section>
+
+<section id="troubleshooting"><h2>Fehlersuche</h2>
+<ul>
+<li><b>«Nicht unterstütztes Encoding (Nummer)»:</b> Das Panel sendet ein Format, das das Tool nicht kennt. Bitte die Nummer melden.</li>
+<li><b>Bild sichtbar, Klicks wirken nicht:</b> Vermutlich wurde das Passwort für «nur ansehen» verwendet. Das Passwort für volle Steuerung eingeben.</li>
+<li><b>Anmeldung fehlgeschlagen:</b> Passwort prüfen. VNC-Passwörter sind auf 8 Zeichen begrenzt.</li>
+<li><b>Zeitüberschreitung / Verbindung nicht möglich:</b> IP, Port, Netzwerk und Firewall prüfen. Prüfen, ob der VNC-Zugang am Panel aktiviert ist und ob schon eine andere Verbindung (z. B. UltraVNC-Viewer) besteht.</li>
+<li><b>Word-Datei kann nicht gespeichert werden:</b> Ist sie in Word noch geöffnet, schliessen oder anderen Namen wählen.</li>
+</ul></section>
+
+<section id="install"><h2>Installation</h2>
+<p>Das Programm ist portabel: ZIP-Datei entpacken und <code>HMIImageExport.exe</code> starten. Es ist keine Installation und kein .NET nötig. Zum Entfernen den Ordner löschen; Einstellungen liegen separat unter <code>%APPDATA%\HMIImageExport</code>.</p></section>
+
+<section id="security"><h2>Passwörter und Sicherheit</h2>
+<p>Passwörter werden nur verschlüsselt gespeichert (Windows-Datenschutz-API, gebunden an Ihr Windows-Benutzerkonto) und nie im Klartext in der Datei oder im Log abgelegt. Eine kopierte <code>settings.json</code> funktioniert auf einem anderen PC oder Benutzer nicht; das Passwort muss dort neu eingegeben werden.</p>
+<p>VNC schützt das Passwort nur schwach und überträgt Bilder unverschlüsselt. Verbindungen daher nur im Anlagennetz verwenden. Screenshots können Kundendaten enthalten: Anlagenordner nicht öffentlich ablegen.</p></section>
+
+<section id="updates"><h2>Updates</h2>
+<p>Das Programm prüft höchstens einmal täglich auf GitHub, ob eine neue Version vorliegt, und zeigt dann einen Hinweis. <b>Hilfe › Nach Updates suchen</b> prüft sofort. Es wird nichts automatisch installiert: <b>Herunterladen</b> öffnet die ZIP-Datei im Browser.</p></section>
+</main></div>
+</body></html>

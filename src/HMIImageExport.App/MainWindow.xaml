@@ -30,20 +30,36 @@
         </MenuItem>
       </MenuItem>
       <MenuItem Header="{l:Tr Menu_Help}">
+        <MenuItem Header="{l:Tr Menu_HelpOpen}" InputGestureText="F1" Click="mi_Help_Click"/>
+        <MenuItem Header="{l:Tr Menu_Quickstart}" Tag="quickstart" Click="mi_Help_Click"/>
+        <MenuItem Header="{l:Tr Menu_Troubleshooting}" Tag="troubleshooting" Click="mi_Help_Click"/>
+        <MenuItem Header="{l:Tr Menu_Install}" Tag="install" Click="mi_Help_Click"/>
+        <Separator/>
+        <MenuItem Header="{l:Tr Menu_CheckUpdates}" Click="mi_CheckUpdates_Click"/>
+        <MenuItem Header="{l:Tr Menu_OpenSettingsFolder}" Click="mi_SettingsFolder_Click"/>
+        <Separator/>
         <MenuItem x:Name="mi_About" Header="{l:Tr Menu_About}" Click="mi_About_Click"/>
       </MenuItem>
     </Menu>
 
     <!-- Update-Banner (Schritt 6) -->
     <Border x:Name="bd_UpdateBanner" Grid.Row="1" Visibility="Collapsed"
-            Background="{StaticResource AccentLightBrush}" Padding="12,6"/>
+            Background="{StaticResource AccentLightBrush}" Padding="12,6">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Content="✕" Padding="8,2" Margin="6,0,0,0" Click="bt_UpdateClose_Click"/>
+        <Button DockPanel.Dock="Right" Content="{l:Tr Update_Skip}" Margin="6,0,0,0" Click="bt_UpdateSkip_Click"/>
+        <Button DockPanel.Dock="Right" Content="{l:Tr Update_Notes}" Margin="6,0,0,0" Click="bt_UpdateNotes_Click"/>
+        <Button DockPanel.Dock="Right" Content="{l:Tr Update_Download}" Style="{StaticResource PrimaryButton}" Margin="6,0,0,0" Click="bt_UpdateDownload_Click"/>
+        <TextBlock x:Name="tb_UpdateText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+      </DockPanel>
+    </Border>
 
     <TabControl x:Name="tc_Main" Grid.Row="2" Margin="12,4,12,8">
       <TabItem x:Name="ti_Capture" Header="{l:Tr Tab_Capture}">
         <views:CaptureView x:Name="view_Capture"/>
       </TabItem>
       <TabItem x:Name="ti_Settings" Header="{l:Tr Tab_Settings}">
-        <TextBlock Text="{l:Tr Settings_Placeholder}" Style="{StaticResource MutedText}" Margin="4,12"/>
+        <views:SettingsView x:Name="view_Settings"/>
       </TabItem>
     </TabControl>
 

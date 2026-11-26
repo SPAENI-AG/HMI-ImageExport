@@ -94,6 +94,7 @@
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="FontWeight" Value="Bold"/>
       <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+      <EventSetter Event="Click" Handler="HelpButton_Click"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">

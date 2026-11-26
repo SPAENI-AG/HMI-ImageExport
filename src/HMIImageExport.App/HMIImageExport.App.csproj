@@ -9,6 +9,7 @@
     <!-- <ApplicationIcon>Assets\icon.ico</ApplicationIcon> sobald Assets/icon.ico vorhanden ist -->
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
     <ProjectReference Include="..\HMIImageExport.Core\HMIImageExport.Core.csproj" />
     <ProjectReference Include="..\HMIImageExport.Export\HMIImageExport.Export.csproj" />
   </ItemGroup>

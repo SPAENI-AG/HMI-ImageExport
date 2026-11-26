@@ -14,7 +14,13 @@
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
 
-      <GroupBox Grid.Column="0" Header="{l:Tr Conn_Title}" Margin="0,0,5,10">
+      <GroupBox Grid.Column="0" Margin="0,0,5,10">
+        <GroupBox.Header>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{l:Tr Conn_Title}" VerticalAlignment="Center"/>
+            <Button Style="{StaticResource HelpButton}" Tag="connect" Margin="8,0,0,0"/>
+          </StackPanel>
+        </GroupBox.Header>
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -26,14 +32,18 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
           </Grid.RowDefinitions>
-          <TextBlock Grid.Row="0" Text="{l:Tr Conn_Host}" Style="{StaticResource FormLabel}"/>
-          <TextBox x:Name="tb_Host" Grid.Row="0" Grid.Column="1" Margin="0,0,10,6"/>
-          <TextBlock Grid.Row="0" Grid.Column="2" Text="{l:Tr Conn_Port}" Style="{StaticResource FormLabel}"/>
-          <TextBox x:Name="tb_Port" Grid.Row="0" Grid.Column="3" Text="5900" Margin="0,0,0,6"/>
-          <TextBlock Grid.Row="1" Text="{l:Tr Conn_Password}" Style="{StaticResource FormLabel}"/>
-          <PasswordBox x:Name="pb_Password" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,0,0,8"/>
-          <StackPanel Grid.Row="2" Grid.ColumnSpan="4" Orientation="Horizontal">
+          <TextBlock Grid.Row="1" Text="{l:Tr Conn_Host}" Style="{StaticResource FormLabel}"/>
+          <TextBox x:Name="tb_Host" Grid.Row="1" Grid.Column="1" Margin="0,0,10,6"/>
+          <TextBlock Grid.Row="1" Grid.Column="2" Text="{l:Tr Conn_Port}" Style="{StaticResource FormLabel}"/>
+          <TextBox x:Name="tb_Port" Grid.Row="1" Grid.Column="3" Text="5900" Margin="0,0,0,6"/>
+          <TextBlock Grid.Row="2" Text="{l:Tr Conn_Password}" Style="{StaticResource FormLabel}"/>
+          <PasswordBox x:Name="pb_Password" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,0,0,8"/>
+          <TextBlock Grid.Row="0" Text="{l:Tr Conn_Profile}" Style="{StaticResource FormLabel}"/>
+          <ComboBox x:Name="cb_Profile" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" DisplayMemberPath="Name"
+                    SelectionChanged="cb_Profile_SelectionChanged" Margin="0,0,0,6"/>
+          <StackPanel Grid.Row="3" Grid.ColumnSpan="4" Orientation="Horizontal">
             <Button x:Name="bt_Connect" Content="{l:Tr Conn_Connect}" Style="{StaticResource PrimaryButton}"
                     Click="bt_Connect_Click" MinWidth="110"/>
             <Button x:Name="bt_Disconnect" Content="{l:Tr Conn_Disconnect}" Click="bt_Disconnect_Click"
@@ -43,7 +53,13 @@
         </Grid>
       </GroupBox>
 
-      <GroupBox Grid.Column="1" Header="{l:Tr Folder_Title}" Margin="5,0,0,10">
+      <GroupBox Grid.Column="1" Margin="5,0,0,10">
+        <GroupBox.Header>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{l:Tr Folder_Title}" VerticalAlignment="Center"/>
+            <Button Style="{StaticResource HelpButton}" Tag="folder" Margin="8,0,0,0"/>
+          </StackPanel>
+        </GroupBox.Header>
         <StackPanel>
           <TextBlock x:Name="tb_Folder" TextWrapping="Wrap" Margin="0,0,0,8"/>
           <StackPanel Orientation="Horizontal">
@@ -70,7 +86,13 @@
         </Grid>
       </Border>
 
-      <GroupBox Grid.Column="1" Header="{l:Tr Pages_Title}">
+      <GroupBox Grid.Column="1">
+        <GroupBox.Header>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{l:Tr Pages_Title}" VerticalAlignment="Center"/>
+            <Button Style="{StaticResource HelpButton}" Tag="pages" Margin="8,0,0,0"/>
+          </StackPanel>
+        </GroupBox.Header>
         <DockPanel>
           <Button x:Name="bt_Save" DockPanel.Dock="Top" Content="{l:Tr Pages_Save}" Style="{StaticResource PrimaryButton}"
                   Click="bt_Save_Click" Margin="0,0,0,8"/>
